@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Aula de Inglês - Exercícios de Clothes</title>
     <style>
         * {
@@ -156,6 +159,16 @@
     </style>
 </head>
 <body>
+    <script>
+        // Cache busting: força recarregar sem cache ao detectar nova versão
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            if (!params.has('v')) {
+                params.set('v', '2');
+                window.location.replace(window.location.pathname + '?' + params.toString());
+            }
+        })();
+    </script>
     <div class="container">
         <h1>Aula de Inglês</h1>
         <p class="subtitle">Exercícios de Vocabulary - Clothes (Roupas)</p>
