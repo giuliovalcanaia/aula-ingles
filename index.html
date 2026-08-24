@@ -284,8 +284,27 @@
                     e.preventDefault();
                     return;
                 }
+                // Se já foi aberto, exige duplo clique para reabrir
+                if (link.classList.contains('opened')) {
+                    e.preventDefault();
+                    return;
+                }
                 const id = this.getAttribute('data-id');
                 setOpened(id, true);
+            });
+
+            link.addEventListener('dblclick', function(e) {
+                if (link.classList.contains('locked')) {
+                    e.preventDefault();
+                    return;
+                }
+                // Só permite duplo clique em links já abertos
+                if (link.classList.contains('opened')) {
+                    const url = link.getAttribute('data-href');
+                    if (url) {
+                        window.open(url, '_blank');
+                    }
+                }
             });
         });
 
