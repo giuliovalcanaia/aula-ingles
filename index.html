@@ -72,12 +72,26 @@
         a:visited {
             color: #34495e;
         }
-        .check {
+        .index-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background-color: #3498db;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 700;
             margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .check {
+            margin-left: auto;
             font-size: 1.4rem;
             min-width: 28px;
             text-align: center;
-            opacity: 0.3;
+            opacity: 0;
             transition: opacity 0.2s ease;
         }
         a.opened .check {
@@ -87,6 +101,24 @@
         a.opened {
             border-left-color: #27ae60;
             background-color: #e8f8f5;
+        }
+        a.opened .index-badge {
+            background-color: #27ae60;
+        }
+        a.locked {
+            pointer-events: none;
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #f0f0f0;
+            color: #95a5a6;
+        }
+        a.locked .index-badge {
+            background-color: #bdc3c7;
+        }
+        .lock-icon {
+            margin-left: auto;
+            font-size: 1.1rem;
+            opacity: 0.7;
         }
         .progress-bar-container {
             width: 100%;
@@ -135,13 +167,13 @@
         <div class="category">
             <div class="category-title">Clothes</div>
             <ul id="linkList">
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/words-pictures-1.htm" target="_blank" data-id="clothes-1"><span class="check">&#10003;</span> Words & Pictures 1</a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-1-match.htm" target="_blank" data-id="clothes-2"><span class="check">&#10003;</span> Match 1</a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/quiz-pictures-1.htm" target="_blank" data-id="clothes-3"><span class="check">&#10003;</span> Quiz Pictures 1</a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-1.htm" target="_blank" data-id="clothes-4"><span class="check">&#10003;</span> Clothes 1</a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-multiple.htm" target="_blank" data-id="clothes-5"><span class="check">&#10003;</span> Multiple Choice</a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-words.htm" target="_blank" data-id="clothes-6"><span class="check">&#10003;</span> Words</a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/wo" target="_blank" data-id="clothes-7"><span class="check">&#10003;</span> WO</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/words-pictures-1.htm" target="_blank" data-id="clothes-1"><span class="index-badge">1</span> Words & Pictures 1<span class="check">&#10003;</span></a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-1-match.htm" target="_blank" data-id="clothes-2"><span class="index-badge">2</span> Match 1<span class="check">&#10003;</span></a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/quiz-pictures-1.htm" target="_blank" data-id="clothes-3"><span class="index-badge">3</span> Quiz Pictures 1<span class="check">&#10003;</span></a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-1.htm" target="_blank" data-id="clothes-4"><span class="index-badge">4</span> Clothes 1<span class="check">&#10003;</span></a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-multiple.htm" target="_blank" data-id="clothes-5"><span class="index-badge">5</span> Multiple Choice<span class="check">&#10003;</span></a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-words.htm" target="_blank" data-id="clothes-6"><span class="index-badge">6</span> Words<span class="check">&#10003;</span></a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/wo" target="_blank" data-id="clothes-7"><span class="index-badge">7</span> WO<span class="check">&#10003;</span></a></li>
             </ul>
         </div>
 
@@ -173,13 +205,52 @@
         function updateUI() {
             const opened = getOpened();
             let count = 0;
-            links.forEach(link => {
+
+            links.forEach((link, index) => {
                 const id = link.getAttribute('data-id');
-                if (opened[id]) {
+                const isOpened = !!opened[id];
+                const isLocked = index > 0 && !opened[links[index - 1].getAttribute('data-id')];
+
+                if (isOpened) {
                     link.classList.add('opened');
                     count++;
                 } else {
                     link.classList.remove('opened');
+                }
+
+                if (isLocked) {
+                    link.classList.add('locked');
+                    link.removeAttribute('href');
+                    link.removeAttribute('target');
+                    // substitui o check por cadeado se ainda não tiver
+                    let lockSpan = link.querySelector('.lock-icon');
+                    if (!lockSpan) {
+                        const checkSpan = link.querySelector('.check');
+                        lockSpan = document.createElement('span');
+                        lockSpan.className = 'lock-icon';
+                        lockSpan.innerHTML = '&#128274;';
+                        if (checkSpan) {
+                            checkSpan.replaceWith(lockSpan);
+                        } else {
+                            link.appendChild(lockSpan);
+                        }
+                    }
+                } else {
+                    link.classList.remove('locked');
+                    // restaura href e target
+                    const originalHref = link.getAttribute('data-href');
+                    if (originalHref && !link.getAttribute('href')) {
+                        link.setAttribute('href', originalHref);
+                        link.setAttribute('target', '_blank');
+                    }
+                    // restaura check
+                    let lockSpan = link.querySelector('.lock-icon');
+                    if (lockSpan) {
+                        const checkSpan = document.createElement('span');
+                        checkSpan.className = 'check';
+                        checkSpan.innerHTML = '&#10003;';
+                        lockSpan.replaceWith(checkSpan);
+                    }
                 }
             });
 
@@ -189,8 +260,17 @@
             progressBar.textContent = percent + '%';
         }
 
+        // guarda href original antes de qualquer modificação
         links.forEach(link => {
-            link.addEventListener('click', function() {
+            link.setAttribute('data-href', link.getAttribute('href'));
+        });
+
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (link.classList.contains('locked')) {
+                    e.preventDefault();
+                    return;
+                }
                 const id = this.getAttribute('data-id');
                 setOpened(id, true);
             });
