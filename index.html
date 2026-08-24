@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula de Inglês - Exercícios de Clothes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        .category {
+            margin-bottom: 25px;
+        }
+        .category-title {
+            font-size: 1.3rem;
+            color: #2980b9;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        ul {
+            list-style: none;
+        }
+        li {
+            margin-bottom: 12px;
+        }
+        a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #34495e;
+            background-color: #f9f9f9;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #bdc3c7;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        a:hover {
+            background-color: #ecf0f1;
+            border-left-color: #3498db;
+            transform: translateX(4px);
+        }
+        a:visited {
+            color: #34495e;
+        }
+        .check {
+            margin-right: 12px;
+            font-size: 1.4rem;
+            min-width: 28px;
+            text-align: center;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+        a.opened .check {
+            opacity: 1;
+            color: #27ae60;
+        }
+        a.opened {
+            border-left-color: #27ae60;
+            background-color: #e8f8f5;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #ecf0f1;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #27ae60;
+            width: 0%;
+            transition: width 0.4s ease;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            font-size: 0.8rem;
+            line-height: 20px;
+        }
+        .reset-btn {
+            display: block;
+            margin: 30px auto 0;
+            padding: 10px 20px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+        .reset-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Aula de Inglês</h1>
+        <p class="subtitle">Exercícios de Vocabulary - Clothes (Roupas)</p>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+
+        <div class="category">
+            <div class="category-title">Clothes</div>
+            <ul id="linkList">
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/words-pictures-1.htm" target="_blank" data-id="clothes-1"><span class="check">&#10003;</span> Words & Pictures 1</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-1-match.htm" target="_blank" data-id="clothes-2"><span class="check">&#10003;</span> Match 1</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/quiz-pictures-1.htm" target="_blank" data-id="clothes-3"><span class="check">&#10003;</span> Quiz Pictures 1</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-1.htm" target="_blank" data-id="clothes-4"><span class="check">&#10003;</span> Clothes 1</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-multiple.htm" target="_blank" data-id="clothes-5"><span class="check">&#10003;</span> Multiple Choice</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/clothes-words.htm" target="_blank" data-id="clothes-6"><span class="check">&#10003;</span> Words</a></li>
+                <li><a href="https://agendaweb.org/exercises/vocabulary/clothes/wo" target="_blank" data-id="clothes-7"><span class="check">&#10003;</span> WO</a></li>
+            </ul>
+        </div>
+
+        <button class="reset-btn" id="resetBtn">Limpar Progresso</button>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'aula_ingles_progresso';
+        const links = document.querySelectorAll('#linkList a');
+        const progressBar = document.getElementById('progressBar');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function getOpened() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function setOpened(id, value) {
+            const opened = getOpened();
+            opened[id] = value;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(opened));
+            updateUI();
+        }
+
+        function updateUI() {
+            const opened = getOpened();
+            let count = 0;
+            links.forEach(link => {
+                const id = link.getAttribute('data-id');
+                if (opened[id]) {
+                    link.classList.add('opened');
+                    count++;
+                } else {
+                    link.classList.remove('opened');
+                }
+            });
+
+            const total = links.length;
+            const percent = total === 0 ? 0 : Math.round((count / total) * 100);
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = percent + '%';
+        }
+
+        links.forEach(link => {
+            link.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                setOpened(id, true);
+            });
+        });
+
+        resetBtn.addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja limpar todo o progresso?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                updateUI();
+            }
+        });
+
+        // Inicializa
+        updateUI();
+    </script>
+</body>
+</html>
