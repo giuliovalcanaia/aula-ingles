@@ -123,6 +123,22 @@
             font-size: 1.1rem;
             opacity: 0.7;
         }
+        .timer-display {
+            margin-left: auto;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #e67e22;
+            min-width: 28px;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        a.timer-active {
+            border-left-color: #e67e22;
+            background-color: #fef5e7;
+        }
+        a.timer-active .index-badge {
+            background-color: #e67e22;
+        }
         .progress-bar-container {
             width: 100%;
             background-color: #ecf0f1;
@@ -160,18 +176,18 @@
 </head>
 <body>
     <script>
-        // Cache busting: força recarregar sem cache ao detectar nova versão
+        // Cache busting: forca recarregar sem cache ao detectar nova versao
         (function() {
             var params = new URLSearchParams(window.location.search);
             if (!params.has('v')) {
-                params.set('v', '3');
+                params.set('v', '4');
                 window.location.replace(window.location.pathname + '?' + params.toString());
             }
         })();
     </script>
     <div class="container">
-        <h1>Aula de Inglês</h1>
-        <p class="subtitle">Exercícios de Vocabulary - Daily Routine (Rotina Diária)</p>
+        <h1>Aula de Ingles</h1>
+        <p class="subtitle">Exercicios de Vocabulary - Daily Routine (Rotina Diaria)</p>
 
         <div class="progress-bar-container">
             <div class="progress-bar" id="progressBar">0%</div>
@@ -194,9 +210,12 @@
 
     <script>
         const STORAGE_KEY = 'aula_ingles_progresso';
+        const TIMERS_KEY = 'aula_ingles_timers';
+        const TIMER_DURATION = 3 * 60; // 3 minutos em segundos
         const links = document.querySelectorAll('#linkList a');
         const progressBar = document.getElementById('progressBar');
         const resetBtn = document.getElementById('resetBtn');
+        let activeTimers = {}; // id -> intervalId
 
         function getOpened() {
             try {
@@ -214,11 +233,118 @@
             updateUI();
         }
 
+        function getTimerData() {
+            try {
+                const data = localStorage.getItem(TIMERS_KEY);
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function setTimerData(id, expiryTimestamp) {
+            const timers = getTimerData();
+            if (expiryTimestamp) {
+                timers[id] = expiryTimestamp;
+            } else {
+                delete timers[id];
+            }
+            localStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+        }
+
+        function clearTimerData(id) {
+            const timers = getTimerData();
+            delete timers[id];
+            localStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+        }
+
+        function startTimerUI(id, endTime) {
+            if (activeTimers[id]) {
+                clearInterval(activeTimers[id]);
+            }
+
+            const link = document.querySelector(`a[data-id="${id}"]`);
+            if (!link) return;
+
+            link.classList.add('timer-active');
+
+            let timerSpan = link.querySelector('.timer-display');
+            if (!timerSpan) {
+                const checkSpan = link.querySelector('.check');
+                timerSpan = document.createElement('span');
+                timerSpan.className = 'timer-display';
+                if (checkSpan) {
+                    checkSpan.style.display = 'none';
+                    link.insertBefore(timerSpan, checkSpan);
+                } else {
+                    link.appendChild(timerSpan);
+                }
+            }
+
+            function updateTimer() {
+                const now = Date.now();
+                const remaining = Math.ceil((endTime - now) / 1000);
+
+                if (remaining <= 0) {
+                    timerSpan.textContent = '0:00';
+                    return;
+                }
+
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                timerSpan.textContent = mins + ':' + secs.toString().padStart(2, '0');
+            }
+
+            updateTimer();
+            activeTimers[id] = setInterval(updateTimer, 1000);
+        }
+
+        function completeTimer(id) {
+            if (activeTimers[id]) {
+                clearInterval(activeTimers[id]);
+                delete activeTimers[id];
+            }
+
+            const link = document.querySelector(`a[data-id="${id}"]`);
+            if (link) {
+                link.classList.remove('timer-active');
+                const timerSpan = link.querySelector('.timer-display');
+                if (timerSpan) {
+                    timerSpan.remove();
+                }
+                const checkSpan = link.querySelector('.check');
+                if (checkSpan) {
+                    checkSpan.style.display = '';
+                }
+            }
+
+            clearTimerData(id);
+            setOpened(id, true);
+        }
+
+        function initTimers() {
+            const timers = getTimerData();
+            const now = Date.now();
+
+            for (const id in timers) {
+                const endTime = timers[id];
+                if (now >= endTime) {
+                    completeTimer(id);
+                } else {
+                    startTimerUI(id, endTime);
+                    const remaining = endTime - now;
+                    setTimeout(function() {
+                        completeTimer(id);
+                    }, remaining);
+                }
+            }
+        }
+
         function updateUI() {
             const opened = getOpened();
             let count = 0;
 
-            links.forEach((link, index) => {
+            links.forEach(function(link, index) {
                 const id = link.getAttribute('data-id');
                 const isOpened = !!opened[id];
                 const isLocked = index > 0 && !opened[links[index - 1].getAttribute('data-id')];
@@ -234,7 +360,6 @@
                     link.classList.add('locked');
                     link.removeAttribute('href');
                     link.removeAttribute('target');
-                    // substitui o check por cadeado se ainda não tiver
                     let lockSpan = link.querySelector('.lock-icon');
                     if (!lockSpan) {
                         const checkSpan = link.querySelector('.check');
@@ -249,13 +374,11 @@
                     }
                 } else {
                     link.classList.remove('locked');
-                    // restaura href e target
                     const originalHref = link.getAttribute('data-href');
                     if (originalHref && !link.getAttribute('href')) {
                         link.setAttribute('href', originalHref);
                         link.setAttribute('target', '_blank');
                     }
-                    // restaura check
                     let lockSpan = link.querySelector('.lock-icon');
                     if (lockSpan) {
                         const checkSpan = document.createElement('span');
@@ -272,24 +395,40 @@
             progressBar.textContent = percent + '%';
         }
 
-        // guarda href original antes de qualquer modificação
-        links.forEach(link => {
+        // guarda href original antes de qualquer modificacao
+        links.forEach(function(link) {
             link.setAttribute('data-href', link.getAttribute('href'));
         });
 
-        links.forEach(link => {
+        links.forEach(function(link) {
             link.addEventListener('click', function(e) {
                 if (link.classList.contains('locked')) {
                     e.preventDefault();
                     return;
                 }
-                // Se já foi aberto, exige duplo clique para reabrir
                 if (link.classList.contains('opened')) {
                     e.preventDefault();
                     return;
                 }
-                const id = this.getAttribute('data-id');
-                setOpened(id, true);
+                if (link.classList.contains('timer-active')) {
+                    e.preventDefault();
+                    const url = link.getAttribute('data-href');
+                    if (url) window.open(url, '_blank');
+                    return;
+                }
+
+                e.preventDefault();
+                const id = link.getAttribute('data-id');
+                const url = link.getAttribute('data-href');
+
+                if (url) window.open(url, '_blank');
+
+                const endTime = Date.now() + TIMER_DURATION * 1000;
+                setTimerData(id, endTime);
+                startTimerUI(id, endTime);
+                setTimeout(function() {
+                    completeTimer(id);
+                }, TIMER_DURATION * 1000);
             });
 
             link.addEventListener('dblclick', function(e) {
@@ -297,7 +436,6 @@
                     e.preventDefault();
                     return;
                 }
-                // Só permite duplo clique em links já abertos
                 if (link.classList.contains('opened')) {
                     const url = link.getAttribute('data-href');
                     if (url) {
@@ -310,12 +448,27 @@
         resetBtn.addEventListener('click', function() {
             if (confirm('Tem certeza que deseja limpar todo o progresso?')) {
                 localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(TIMERS_KEY);
+                for (const id in activeTimers) {
+                    clearInterval(activeTimers[id]);
+                }
+                activeTimers = {};
+                document.querySelectorAll('.timer-display').forEach(function(el) {
+                    el.remove();
+                });
+                document.querySelectorAll('.check').forEach(function(el) {
+                    el.style.display = '';
+                });
+                document.querySelectorAll('.timer-active').forEach(function(el) {
+                    el.classList.remove('timer-active');
+                });
                 updateUI();
             }
         });
 
         // Inicializa
         updateUI();
+        initTimers();
     </script>
 </body>
 </html>
