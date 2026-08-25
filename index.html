@@ -175,16 +175,6 @@
     </style>
 </head>
 <body>
-    <script>
-        // Cache busting: forca recarregar sem cache ao detectar nova versao
-        (function() {
-            var params = new URLSearchParams(window.location.search);
-            if (!params.has('v')) {
-                params.set('v', '4');
-                window.location.replace(window.location.pathname + '?' + params.toString());
-            }
-        })();
-    </script>
     <div class="container">
         <h1>Aula de Ingles</h1>
         <p class="subtitle">Exercicios de Vocabulary - Daily Routine (Rotina Diaria)</p>
@@ -219,7 +209,7 @@
 
         function getOpened() {
             try {
-                const data = localStorage.getItem(STORAGE_KEY);
+                const data = sessionStorage.getItem(STORAGE_KEY);
                 return data ? JSON.parse(data) : {};
             } catch (e) {
                 return {};
@@ -229,13 +219,13 @@
         function setOpened(id, value) {
             const opened = getOpened();
             opened[id] = value;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(opened));
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(opened));
             updateUI();
         }
 
         function getTimerData() {
             try {
-                const data = localStorage.getItem(TIMERS_KEY);
+                const data = sessionStorage.getItem(TIMERS_KEY);
                 return data ? JSON.parse(data) : {};
             } catch (e) {
                 return {};
@@ -249,13 +239,13 @@
             } else {
                 delete timers[id];
             }
-            localStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+            sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
         }
 
         function clearTimerData(id) {
             const timers = getTimerData();
             delete timers[id];
-            localStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+            sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
         }
 
         function startTimerUI(id, endTime) {
@@ -447,8 +437,8 @@
 
         resetBtn.addEventListener('click', function() {
             if (confirm('Tem certeza que deseja limpar todo o progresso?')) {
-                localStorage.removeItem(STORAGE_KEY);
-                localStorage.removeItem(TIMERS_KEY);
+                sessionStorage.removeItem(STORAGE_KEY);
+                sessionStorage.removeItem(TIMERS_KEY);
                 for (const id in activeTimers) {
                     clearInterval(activeTimers[id]);
                 }
