@@ -118,25 +118,10 @@
     .material-fill {
       font-variation-settings: 'FILL' 1, 'wght' 500;
     }
-
-    /* Modal transitions */
-    .modal-overlay {
-      transition: opacity 0.2s ease;
-    }
-    .modal-box {
-      transition: transform 0.2s ease, border-color 0.3s ease, background-color 0.3s ease;
-    }
-    .modal-success {
-      border-color: #27ae60 !important;
-      background-color: #f2fbf6 !important;
-    }
-    .modal-success .modal-title {
-      color: #27ae60 !important;
-    }
   </style>
 </head>
 
-<body class="bg-background min-h-screen text-on-surface pb-24 md:pb-0">
+<body class="bg-background min-h-screen text-on-surface">
   <!-- Top App Bar Mobile (Simplified) -->
   <header
     class="bg-surface/90 backdrop-blur-md flex md:hidden items-center px-4 py-3 sticky top-0 z-50 shadow-sm border-b border-border-muted">
@@ -254,66 +239,6 @@
     </div>
   </main>
 
-  <!-- Password Modal -->
-  <div id="passwordModal" class="modal-overlay fixed inset-0 bg-black/50 z-[100] hidden items-center justify-center px-4">
-    <div id="modalBox" class="modal-box bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl border-2 border-transparent">
-      <div id="modalHeader">
-        <div class="flex items-center gap-2 mb-2">
-          <span id="modalIcon" class="material-symbols-outlined text-2xl text-[#f59e0b]">pending</span>
-          <h3 id="modalTitle" class="modal-title font-title-md text-title-md text-on-surface">Revisão da Professora</h3>
-        </div>
-        <p class="font-body-md text-body-md text-on-surface-variant text-sm mb-4">
-          Atividade concluída. Insira a senha da professora para liberar o próximo exercício.
-        </p>
-      </div>
-      <div id="modalSuccessHeader" class="hidden">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="material-symbols-outlined text-2xl text-[#27ae60] material-fill">check_circle</span>
-          <h3 class="font-title-md text-title-md text-[#27ae60]">Atividade Aprovada!</h3>
-        </div>
-        <p class="font-body-md text-body-md text-on-surface-variant text-sm mb-4">
-          Próximo exercício liberado.
-        </p>
-      </div>
-      <div id="modalForm">
-        <label class="block font-label-md text-label-md text-on-surface mb-1">Senha</label>
-        <input id="passwordInput" type="password"
-          class="w-full px-3 py-2 rounded-lg border border-border-muted bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent mb-3"
-          placeholder="Digite a senha">
-        <p id="passwordError" class="font-label-sm text-label-sm text-error mb-3 hidden">Senha incorreta.</p>
-        <button id="submitPassword"
-          class="w-full bg-secondary text-white font-label-md text-label-md py-2.5 rounded-lg hover:bg-secondary-fixed-dim transition-all active:scale-[0.98]">
-          Liberar Atividade
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- BottomNavBar (Mobile Only) -->
-  <nav
-    class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface/90 backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] border-t border-border-muted md:hidden">
-    <button
-      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-all rounded-xl px-4 py-1 active:scale-90 duration-200">
-      <span class="material-symbols-outlined">home</span>
-      <span class="font-label-sm text-label-sm mt-1">Home</span>
-    </button>
-    <button
-      class="flex flex-col items-center justify-center bg-secondary text-white rounded-xl px-4 py-1 hover:bg-secondary-fixed-dim transition-all active:scale-90 duration-200">
-      <span class="material-symbols-outlined">menu_book</span>
-      <span class="font-label-sm text-label-sm mt-1">Lessons</span>
-    </button>
-    <button
-      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-all rounded-xl px-4 py-1 active:scale-90 duration-200">
-      <span class="material-symbols-outlined">leaderboard</span>
-      <span class="font-label-sm text-label-sm mt-1">Stats</span>
-    </button>
-    <button
-      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-all rounded-xl px-4 py-1 active:scale-90 duration-200">
-      <span class="material-symbols-outlined">person</span>
-      <span class="font-label-sm text-label-sm mt-1">Profile</span>
-    </button>
-  </nav>
-
   <script>
     const STORAGE_KEY = 'aula_ingles_progresso';
     const WAITING_KEY = 'aula_ingles_waiting';
@@ -322,17 +247,6 @@
     const progressBar = document.getElementById('progressBar');
     const progressBadge = document.getElementById('progressBadge');
     const progressText = document.getElementById('progressText');
-
-    // Modal elements
-    const passwordModal = document.getElementById('passwordModal');
-    const modalBox = document.getElementById('modalBox');
-    const modalHeader = document.getElementById('modalHeader');
-    const modalSuccessHeader = document.getElementById('modalSuccessHeader');
-    const modalForm = document.getElementById('modalForm');
-    const passwordInput = document.getElementById('passwordInput');
-    const passwordError = document.getElementById('passwordError');
-    const submitPassword = document.getElementById('submitPassword');
-    let modalActivityId = null;
 
     // ---- Estilos visuais por estado ----
     // next            = azul/ciano: proxima atividade a ser feita
@@ -403,63 +317,6 @@
       return inputHash === TEACHER_PASSWORD_HASH;
     }
 
-    function showPasswordModal(id) {
-      modalActivityId = id;
-      passwordInput.value = '';
-      passwordError.classList.add('hidden');
-      passwordInput.disabled = false;
-      submitPassword.disabled = false;
-      submitPassword.textContent = 'Liberar Atividade';
-      modalBox.classList.remove('modal-success');
-      modalHeader.classList.remove('hidden');
-      modalSuccessHeader.classList.add('hidden');
-      modalForm.classList.remove('hidden');
-      passwordModal.classList.remove('hidden');
-      passwordModal.classList.add('flex');
-      setTimeout(() => passwordInput.focus(), 100);
-    }
-
-    function hidePasswordModal() {
-      passwordModal.classList.add('hidden');
-      passwordModal.classList.remove('flex');
-      modalActivityId = null;
-    }
-
-    async function handlePasswordSubmit() {
-      const input = passwordInput.value.trim();
-      if (!input) return;
-
-      passwordInput.disabled = true;
-      submitPassword.disabled = true;
-      submitPassword.textContent = 'Verificando...';
-
-      const isValid = await verifyPassword(input);
-
-      if (!isValid) {
-        passwordError.classList.remove('hidden');
-        passwordInput.disabled = false;
-        submitPassword.disabled = false;
-        submitPassword.textContent = 'Liberar Atividade';
-        passwordInput.focus();
-        return;
-      }
-
-      // Senha correta - mostra sucesso
-      passwordError.classList.add('hidden');
-      modalBox.classList.add('modal-success');
-      modalHeader.classList.add('hidden');
-      modalSuccessHeader.classList.remove('hidden');
-      modalForm.classList.add('hidden');
-
-      // Marca como done após breve delay
-      setTimeout(() => {
-        if (modalActivityId) {
-          setOpened(modalActivityId, true);
-        }
-        hidePasswordModal();
-      }, 800);
-    }
-
     function applyState(link, state) {
       const num = links.indexOf(link) + 1;
       link.dataset.state = state;
@@ -500,15 +357,60 @@
       } else if (state === 'locked') {
         status.innerHTML = '<span class="material-symbols-outlined text-on-surface-variant/50">lock</span>';
       } else if (state === 'waiting_review') {
-        status.innerHTML = '<button class="call-teacher-btn bg-[#f59e0b] hover:bg-[#d97706] text-white font-label-sm text-label-sm px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-sm whitespace-nowrap">Chamar Professora</button>';
-        const btn = status.querySelector('.call-teacher-btn');
-        if (btn) {
-          btn.addEventListener('click', function (e) {
+        status.innerHTML = '<div class="inline-password relative flex flex-col items-end"><div class="flex items-center gap-1"><input type="password" class="pwd-input w-20 px-2 py-1 text-sm rounded border border-[#f59e0b] bg-white text-on-surface focus:outline-none focus:ring-1 focus:ring-[#f59e0b]" placeholder="Senha"><button class="pwd-submit flex items-center justify-center bg-[#f59e0b] hover:bg-[#d97706] text-white px-2 py-1 rounded text-sm font-semibold transition-all active:scale-95" style="height:28px;width:32px">OK</button></div><span class="pwd-error absolute top-full mt-1 text-error text-xs hidden font-label-sm whitespace-nowrap">Senha incorreta.</span></div>';
+        const container = status.querySelector('.inline-password');
+        const input = container.querySelector('.pwd-input');
+        const btn = container.querySelector('.pwd-submit');
+        const error = container.querySelector('.pwd-error');
+
+        async function tryUnlock() {
+          const val = input.value.trim();
+          if (!val) return;
+          input.disabled = true;
+          btn.disabled = true;
+          btn.textContent = '...';
+          const isValid = await verifyPassword(val);
+          if (!isValid) {
+            error.classList.remove('hidden');
+            btn.textContent = '3s';
+            let remaining = 3;
+            const countdown = setInterval(() => {
+              remaining--;
+              if (remaining > 0) {
+                btn.textContent = remaining + 's';
+              } else {
+                clearInterval(countdown);
+                input.disabled = false;
+                btn.disabled = false;
+                btn.textContent = 'OK';
+                input.value = '';
+                input.focus();
+              }
+            }, 1000);
+            return;
+          }
+          error.classList.add('hidden');
+          btn.textContent = '';
+          btn.innerHTML = '<span class="material-symbols-outlined text-white flex items-center justify-center leading-none" style="font-size:16px">check</span>';
+          btn.classList.replace('bg-[#f59e0b]', 'bg-[#27ae60]');
+          btn.classList.replace('hover:bg-[#d97706]', 'hover:bg-[#1e8449]');
+          setTimeout(() => {
+            setOpened(link.getAttribute('data-id'), true);
+          }, 600);
+        }
+
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          tryUnlock();
+        });
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
             e.preventDefault();
             e.stopPropagation();
-            showPasswordModal(link.getAttribute('data-id'));
-          });
-        }
+            tryUnlock();
+          }
+        });
       } else {
         status.innerHTML = '<span class="material-symbols-outlined material-fill text-[#27ae60]" style="font-size:28px">check_circle</span>';
       }
@@ -581,19 +483,6 @@
         const id = link.getAttribute('data-id');
         setWaiting(id, true);
       });
-    });
-
-    // Modal events
-    submitPassword.addEventListener('click', handlePasswordSubmit);
-    passwordInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        handlePasswordSubmit();
-      }
-    });
-    passwordModal.addEventListener('click', function (e) {
-      if (e.target === passwordModal) {
-        hidePasswordModal();
-      }
     });
 
     // Inicializa
