@@ -1,427 +1,550 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Aula de Inglês - Exercícios de Food</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            font-size: 0.95rem;
-        }
-        .category {
-            margin-bottom: 25px;
-        }
-        .category-title {
-            font-size: 1.3rem;
-            color: #2980b9;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #ecf0f1;
-        }
-        ul {
-            list-style: none;
-        }
-        li {
-            margin-bottom: 12px;
-        }
-        a {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #34495e;
-            background-color: #f9f9f9;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border-left: 4px solid #bdc3c7;
-            transition: all 0.2s ease;
-            font-weight: 500;
-        }
-        a:hover {
-            background-color: #ecf0f1;
-            border-left-color: #3498db;
-            transform: translateX(4px);
-        }
-        a:visited {
-            color: #34495e;
-        }
-        .index-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            background-color: #3498db;
-            color: #fff;
-            border-radius: 50%;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-        .check {
-            margin-left: auto;
-            font-size: 1.4rem;
-            min-width: 28px;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        a.opened .check {
-            opacity: 1;
-            color: #27ae60;
-        }
-        a.opened {
-            border-left-color: #27ae60;
-            background-color: #e8f8f5;
-        }
-        a.opened .index-badge {
-            background-color: #27ae60;
-        }
-        a.locked {
-            pointer-events: none;
-            opacity: 0.6;
-            cursor: not-allowed;
-            background-color: #f0f0f0;
-            color: #95a5a6;
-        }
-        a.locked .index-badge {
-            background-color: #bdc3c7;
-        }
-        .lock-icon {
-            margin-left: auto;
-            font-size: 1.1rem;
-            opacity: 0.7;
-        }
-        .timer-display {
-            margin-left: auto;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #e67e22;
-            min-width: 28px;
-            text-align: center;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        a.timer-active {
-            border-left-color: #e67e22;
-            background-color: #fef5e7;
-        }
-        a.timer-active .index-badge {
-            background-color: #e67e22;
-        }
-        .progress-bar-container {
-            width: 100%;
-            background-color: #ecf0f1;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-        .progress-bar {
-            height: 20px;
-            background-color: #27ae60;
-            width: 0%;
-            transition: width 0.4s ease;
-            border-radius: 20px;
-            text-align: center;
-            color: white;
-            font-size: 0.8rem;
-            line-height: 20px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Aula de Inglês - Exercícios de Numbers</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#f9f9f9",
+            "ocean-depth": "#001d35",
+            "on-secondary-fixed": "#001b3e",
+            "on-tertiary-container": "#41b9fb",
+            "surface-container-low": "#f3f3f4",
+            "surface": "#f9f9f9",
+            "surface-subtle": "#f8f9fb",
+            "inverse-surface": "#2f3131",
+            "tertiary-fixed-dim": "#87ceff",
+            "border-muted": "#e2e8f0",
+            "secondary": "#245dac",
+            "primary-fixed": "#d1e4ff",
+            "on-primary-fixed": "#001d35",
+            "primary-fixed-dim": "#9ecafe",
+            "secondary-fixed-dim": "#aac7ff",
+            "surface-container": "#eeeeee",
+            "surface-variant": "#e2e2e2",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f9f9f9",
+            "secondary-container": "#7babff",
+            "error": "#ba1a1a",
+            "on-tertiary": "#ffffff",
+            "on-primary": "#ffffff",
+            "on-error": "#ffffff",
+            "on-error-container": "#93000a",
+            "cyan-accent": "#05d3f8",
+            "tertiary": "#003047",
+            "inverse-primary": "#9ecafe",
+            "primary-container": "#0f4571",
+            "surface-container-lowest": "#ffffff",
+            "outline-variant": "#c2c7d0",
+            "on-tertiary-fixed-variant": "#004c6d",
+            "surface-container-highest": "#e2e2e2",
+            "on-secondary-container": "#003e81",
+            "on-primary-container": "#88b3e5",
+            "tertiary-container": "#004767",
+            "surface-dim": "#dadada",
+            "surface-container-high": "#e8e8e8",
+            "secondary-fixed": "#d7e3ff",
+            "primary": "#002e51",
+            "inverse-on-surface": "#f0f1f1",
+            "on-surface": "#1a1c1c",
+            "on-secondary-fixed-variant": "#00458e",
+            "on-background": "#1a1c1c",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#164975",
+            "surface-tint": "#33618f",
+            "on-tertiary-fixed": "#001e2e",
+            "on-surface-variant": "#42474f",
+            "tertiary-fixed": "#c8e6ff",
+            "outline": "#727780"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gap-md": "16px",
+            "margin-mobile": "16px",
+            "gutter": "24px",
+            "gap-lg": "32px",
+            "container-max": "1200px",
+            "gap-sm": "8px",
+            "base": "8px",
+            "margin-lg": "32px"
+          },
+          "fontFamily": {
+            "label-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "title-md": ["Plus Jakarta Sans"],
+            "display-lg": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "display-lg": ["48px", {"lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+            "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-    </style>
+    .material-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 500;
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Aula de Inglês</h1>
-        <p class="subtitle">Exercícios de Vocabulary - Food (Comida)</p>
 
-        <div class="progress-bar-container">
-            <div class="progress-bar" id="progressBar">0%</div>
-        </div>
+<body class="bg-background min-h-screen text-on-surface pb-24 md:pb-0">
+  <!-- Top App Bar Mobile (Simplified) -->
+  <header
+    class="bg-surface/90 backdrop-blur-md flex md:hidden items-center px-4 py-3 sticky top-0 z-50 shadow-sm border-b border-border-muted">
+    <button class="mr-4 text-on-surface"><span class="material-symbols-outlined">arrow_back</span></button>
+    <h1 class="font-title-md text-title-md flex-1 text-center text-on-surface">Lessons</h1>
+    <div class="w-6"></div> <!-- Spacer for balance -->
+  </header>
 
-        <div class="category">
-            <div class="category-title">Food</div>
-            <ul id="linkList">
-                <li><a href="https://agendaweb.org/exercises/vocabulary/food/food-drink-words-pictures-1.htm" target="_blank" data-id="food-1"><span class="index-badge">1</span> Food & Drink Words & Pictures 1<span class="check">&#10003;</span></a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/food/food-drink-quiz-1.htm" target="_blank" data-id="food-2"><span class="index-badge">2</span> Food & Drink Quiz 1<span class="check">&#10003;</span></a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/food/food-1-match.htm" target="_blank" data-id="food-3"><span class="index-badge">3</span> Food Match 1<span class="check">&#10003;</span></a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/food/food-1-game.htm" target="_blank" data-id="food-4"><span class="index-badge">4</span> Food Game 1<span class="check">&#10003;</span></a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/food/food-drink-write-1.htm" target="_blank" data-id="food-5"><span class="index-badge">5</span> Food & Drink Write 1<span class="check">&#10003;</span></a></li>
-                <li><a href="https://agendaweb.org/exercises/vocabulary/food/food-drink-words-pictures-2.htm" target="_blank" data-id="food-6"><span class="index-badge">6</span> Food & Drink Words & Pictures 2<span class="check">&#10003;</span></a></li>
-            </ul>
-        </div>
-
+  <!-- Main Content Canvas -->
+  <main class="max-w-[800px] mx-auto px-4 md:px-gutter py-margin-lg">
+    <!-- Header Section -->
+    <div class="mb-margin-lg text-center md:text-left text-on-surface">
+      <h1 class="font-display-lg text-display-lg mb-2">Aula de Inglês</h1>
+      <p class="font-title-md text-title-md text-on-surface-variant">Exercícios de Vocabulary - Numbers (Números)</p>
     </div>
 
-    <script>
-        const STORAGE_KEY = 'aula_ingles_progresso';
-        const TIMERS_KEY = 'aula_ingles_timers';
-        const TIMER_DURATION = 3 * 60; // 3 minutos em segundos
-        const links = document.querySelectorAll('#linkList a');
-        const progressBar = document.getElementById('progressBar');
-        let activeTimers = {}; // id -> intervalId
+    <!-- Progress Card -->
+    <div class="bg-surface rounded-xl p-6 shadow-md mb-margin-lg border border-border-muted relative overflow-hidden">
+      <!-- Soft decorative glow -->
+      <div class="absolute -right-20 -top-20 w-40 h-40 bg-cyan-accent/10 rounded-full blur-3xl pointer-events-none">
+      </div>
+      <div class="flex justify-between items-center mb-4 relative z-10">
+        <h2 class="font-title-md text-title-md text-on-surface">Lesson Progress</h2>
+        <span id="progressBadge" class="font-label-md text-label-md bg-secondary text-white px-3 py-1 rounded-full">0%
+          Complete</span>
+      </div>
+      <!-- Progress Bar -->
+      <div
+        class="w-full bg-surface-container rounded-full h-3 mb-2 overflow-hidden border border-border-muted relative z-10">
+        <div id="progressBar"
+          class="bg-gradient-to-r from-[#009ddd] to-[#05d3f8] h-3 rounded-full transition-all duration-500"
+          style="width: 0%"></div>
+      </div>
+      <p id="progressText" class="font-body-md text-body-md text-on-surface-variant text-sm relative z-10">Let's get
+        started on your numbers vocabulary!</p>
+    </div>
 
-        function getOpened() {
-            try {
-                const data = sessionStorage.getItem(STORAGE_KEY);
-                return data ? JSON.parse(data) : {};
-            } catch (e) {
-                return {};
-            }
+    <!-- Exercise List -->
+    <div id="linkList" class="grid grid-cols-1 gap-4">
+      <a href="https://agendaweb.org/exercises/vocabulary/numbers/1-10-match.html" target="_blank"
+        data-id="numbers-1" data-href="https://agendaweb.org/exercises/vocabulary/numbers/1-10-match.html"
+        class="item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline">
+        <div class="overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex items-start gap-4 relative z-10">
+          <div
+            class="icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold">
+            1</div>
+          <div class="flex-1">
+            <h3 class="font-title-md text-title-md text-on-surface mb-1">Numbers 1-10 Match</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant text-sm">Match numbers to words.</p>
+          </div>
+          <div class="status-area flex items-center justify-center flex-shrink-0 self-center min-w-[40px]"></div>
+        </div>
+      </a>
+      <a href="https://agendaweb.org/exercises/vocabulary/numbers/numbers-10-game.htm" target="_blank" data-id="numbers-2"
+        data-href="https://agendaweb.org/exercises/vocabulary/numbers/numbers-10-game.htm"
+        class="item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline">
+        <div class="overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex items-start gap-4 relative z-10">
+          <div
+            class="icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold">
+            2</div>
+          <div class="flex-1">
+            <h3 class="font-title-md text-title-md text-on-surface mb-1">Numbers 10 Game</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant text-sm">Interactive numbers game.</p>
+          </div>
+          <div class="status-area flex items-center justify-center flex-shrink-0 self-center min-w-[40px]"></div>
+        </div>
+      </a>
+      <a href="https://agendaweb.org/exercises/vocabulary/numbers/1-10-numbers.html" target="_blank" data-id="numbers-3"
+        data-href="https://agendaweb.org/exercises/vocabulary/numbers/1-10-numbers.html"
+        class="item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline">
+        <div class="overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex items-start gap-4 relative z-10">
+          <div
+            class="icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold">
+            3</div>
+          <div class="flex-1">
+            <h3 class="font-title-md text-title-md text-on-surface mb-1">Numbers 1-10</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant text-sm">Learn the numbers.</p>
+          </div>
+          <div class="status-area flex items-center justify-center flex-shrink-0 self-center min-w-[40px]"></div>
+        </div>
+      </a>
+      <a href="https://agendaweb.org/exercises/vocabulary/numbers/1-10-words-pictures.htm" target="_blank" data-id="numbers-4"
+        data-href="https://agendaweb.org/exercises/vocabulary/numbers/1-10-words-pictures.htm"
+        class="item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline">
+        <div class="overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex items-start gap-4 relative z-10">
+          <div
+            class="icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold">
+            4</div>
+          <div class="flex-1">
+            <h3 class="font-title-md text-title-md text-on-surface mb-1">Numbers 1-10 Words &amp; Pictures</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant text-sm">Words and pictures.</p>
+          </div>
+          <div class="status-area flex items-center justify-center flex-shrink-0 self-center min-w-[40px]"></div>
+        </div>
+      </a>
+      <a href="https://agendaweb.org/exercises/vocabulary/numbers/numbers-1-10-quiz.htm" target="_blank" data-id="numbers-5"
+        data-href="https://agendaweb.org/exercises/vocabulary/numbers/numbers-1-10-quiz.htm"
+        class="item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline">
+        <div class="overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex items-start gap-4 relative z-10">
+          <div
+            class="icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold">
+            5</div>
+          <div class="flex-1">
+            <h3 class="font-title-md text-title-md text-on-surface mb-1">Numbers 1-10 Quiz</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant text-sm">Test your knowledge.</p>
+          </div>
+          <div class="status-area flex items-center justify-center flex-shrink-0 self-center min-w-[40px]"></div>
+        </div>
+      </a>
+      <a href="https://agendaweb.org/exercises/vocabulary/numbers/numbers-1-10.html" target="_blank"
+        data-id="numbers-6" data-href="https://agendaweb.org/exercises/vocabulary/numbers/numbers-1-10.html"
+        class="item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline">
+        <div class="overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex items-start gap-4 relative z-10">
+          <div
+            class="icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold">
+            6</div>
+          <div class="flex-1">
+            <h3 class="font-title-md text-title-md text-on-surface mb-1">Numbers 1-10 Exercise</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant text-sm">Practice the numbers.</p>
+          </div>
+          <div class="status-area flex items-center justify-center flex-shrink-0 self-center min-w-[40px]"></div>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <!-- BottomNavBar (Mobile Only) -->
+  <nav
+    class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface/90 backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] border-t border-border-muted md:hidden">
+    <button
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-all rounded-xl px-4 py-1 active:scale-90 duration-200">
+      <span class="material-symbols-outlined">home</span>
+      <span class="font-label-sm text-label-sm mt-1">Home</span>
+    </button>
+    <button
+      class="flex flex-col items-center justify-center bg-secondary text-white rounded-xl px-4 py-1 hover:bg-secondary-fixed-dim transition-all active:scale-90 duration-200">
+      <span class="material-symbols-outlined">menu_book</span>
+      <span class="font-label-sm text-label-sm mt-1">Lessons</span>
+    </button>
+    <button
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-all rounded-xl px-4 py-1 active:scale-90 duration-200">
+      <span class="material-symbols-outlined">leaderboard</span>
+      <span class="font-label-sm text-label-sm mt-1">Stats</span>
+    </button>
+    <button
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-all rounded-xl px-4 py-1 active:scale-90 duration-200">
+      <span class="material-symbols-outlined">person</span>
+      <span class="font-label-sm text-label-sm mt-1">Profile</span>
+    </button>
+  </nav>
+
+  <script>
+    const STORAGE_KEY = 'aula_ingles_progresso';
+    const TIMERS_KEY = 'aula_ingles_timers';
+    const TIMER_DURATION = 180; // segundos (3 minutos)
+    const links = Array.from(document.querySelectorAll('#linkList a'));
+    const progressBar = document.getElementById('progressBar');
+    const progressBadge = document.getElementById('progressBadge');
+    const progressText = document.getElementById('progressText');
+    let activeTimers = {}; // id -> intervalId
+
+    // ---- Estilos visuais por estado ----
+    // next   = azul/ciano: proxima atividade a ser feita
+    // locked = cinza: bloqueada ate concluir a anterior
+    // timer  = laranja: timer de 3 minutos em andamento
+    // done   = verde: concluida
+    const ITEM_BASE = 'item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline';
+    const ITEM_CLASSES = {
+      next: 'bg-surface shadow-[0_0_15px_rgba(5,211,248,0.15)] border-2 border-cyan-accent hover:shadow-[0_0_25px_rgba(5,211,248,0.25)] transform hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98] cursor-pointer',
+      locked: 'bg-surface-container-low shadow-sm border border-border-muted opacity-70 cursor-not-allowed',
+      timer: 'bg-[#fffaf3] shadow-[0_0_15px_rgba(230,126,34,0.18)] border-2 border-[#e67e22] hover:shadow-[0_0_25px_rgba(230,126,34,0.28)] transform hover:-translate-y-1 cursor-pointer',
+      done: 'bg-[#f2fbf6] shadow-sm border-2 border-[#27ae60] cursor-pointer'
+    };
+    const ICON_BASE = 'icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold';
+    const ICON_CLASSES = {
+      next: 'bg-gradient-to-br from-[#009ddd] to-[#05d3f8] text-white shadow-sm',
+      locked: 'bg-surface-variant text-on-surface-variant',
+      timer: 'bg-gradient-to-br from-[#e67e22] to-[#f5b041] text-white shadow-sm',
+      done: 'bg-gradient-to-br from-[#27ae60] to-[#58d68d] text-white shadow-sm'
+    };
+
+    function getOpened() {
+      try {
+        const data = sessionStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function setOpened(id, value) {
+      const opened = getOpened();
+      opened[id] = value;
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(opened));
+      updateUI();
+    }
+
+    function getTimerData() {
+      try {
+        const data = sessionStorage.getItem(TIMERS_KEY);
+        return data ? JSON.parse(data) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function setTimerData(id, expiryTimestamp) {
+      const timers = getTimerData();
+      if (expiryTimestamp) {
+        timers[id] = expiryTimestamp;
+      } else {
+        delete timers[id];
+      }
+      sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+    }
+
+    function clearTimerData(id) {
+      const timers = getTimerData();
+      delete timers[id];
+      sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+    }
+
+    function applyState(link, state) {
+      const num = links.indexOf(link) + 1;
+      link.dataset.state = state;
+
+      link.className = ITEM_BASE + ' ' + ITEM_CLASSES[state];
+
+      if (state === 'locked') {
+        link.removeAttribute('href');
+        link.removeAttribute('target');
+      } else {
+        const originalHref = link.getAttribute('data-href');
+        if (originalHref && !link.getAttribute('href')) {
+          link.setAttribute('href', originalHref);
+          link.setAttribute('target', '_blank');
+        }
+      }
+
+      // Overlay de hover (somente na proxima atividade)
+      const overlay = link.querySelector('.overlay');
+      overlay.className = 'overlay absolute inset-0 opacity-0 transition-opacity pointer-events-none' +
+        (state === 'next' ? ' bg-gradient-to-r from-[#009ddd]/5 to-[#05d3f8]/10 group-hover:opacity-100' : '');
+
+      // Caixa do numero/icone
+      const iconBox = link.querySelector('.icon-box');
+      iconBox.className = ICON_BASE + ' ' + ICON_CLASSES[state];
+      if (state === 'done') {
+        iconBox.innerHTML = '<span class="material-symbols-outlined material-fill">check</span>';
+      } else {
+        iconBox.textContent = num;
+      }
+
+      // Area de status (lado direito)
+      const status = link.querySelector('.status-area');
+      if (state === 'next') {
+        status.innerHTML = '<span class="font-title-md text-title-md text-cyan-accent font-bold">' + num + '</span>';
+      } else if (state === 'locked') {
+        status.innerHTML = '<span class="material-symbols-outlined text-on-surface-variant/50">lock</span>';
+      } else if (state === 'timer') {
+        status.innerHTML = '<span class="timer-display font-title-md text-title-md font-bold text-[#e67e22] tabular-nums">--:--</span>';
+      } else {
+        status.innerHTML = '<span class="material-symbols-outlined material-fill text-[#27ae60]" style="font-size:28px">check_circle</span>';
+      }
+    }
+
+    function startTimerUI(id, endTime) {
+      if (activeTimers[id]) {
+        clearInterval(activeTimers[id]);
+      }
+
+      const link = document.querySelector(`a[data-id="${id}"]`);
+      if (!link) return;
+
+      applyState(link, 'timer');
+      const timerSpan = link.querySelector('.timer-display');
+      if (!timerSpan) return;
+
+      function updateTimer() {
+        const now = Date.now();
+        const remaining = Math.ceil((endTime - now) / 1000);
+
+        if (remaining <= 0) {
+          timerSpan.textContent = '0:00';
+          return;
         }
 
-        function setOpened(id, value) {
-            const opened = getOpened();
-            opened[id] = value;
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(opened));
-            updateUI();
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerSpan.textContent = mins + ':' + secs.toString().padStart(2, '0');
+      }
+
+      updateTimer();
+      activeTimers[id] = setInterval(updateTimer, 1000);
+    }
+
+    function completeTimer(id) {
+      if (activeTimers[id]) {
+        clearInterval(activeTimers[id]);
+        delete activeTimers[id];
+      }
+
+      clearTimerData(id);
+      setOpened(id, true);
+    }
+
+    function initTimers() {
+      const timers = getTimerData();
+      const now = Date.now();
+
+      for (const id in timers) {
+        const endTime = timers[id];
+        if (now >= endTime) {
+          completeTimer(id);
+        } else {
+          startTimerUI(id, endTime);
+          const remaining = endTime - now;
+          setTimeout(function () {
+            completeTimer(id);
+          }, remaining);
+        }
+      }
+    }
+
+    function updateUI() {
+      const opened = getOpened();
+      const timers = getTimerData();
+      const now = Date.now();
+      let count = 0;
+
+      links.forEach(function (link, index) {
+        const id = link.getAttribute('data-id');
+        const isOpened = !!opened[id];
+        const isLocked = index > 0 && !opened[links[index - 1].getAttribute('data-id')];
+        const hasTimer = !!timers[id] && timers[id] > now;
+
+        if (isOpened) count++;
+
+        let state;
+        if (isOpened) {
+          state = 'done';
+        } else if (isLocked) {
+          state = 'locked';
+        } else if (hasTimer) {
+          state = 'timer';
+        } else {
+          state = 'next';
         }
 
-        function getTimerData() {
-            try {
-                const data = sessionStorage.getItem(TIMERS_KEY);
-                return data ? JSON.parse(data) : {};
-            } catch (e) {
-                return {};
-            }
+        applyState(link, state);
+      });
+
+      const total = links.length;
+      const percent = total === 0 ? 0 : Math.round((count / total) * 100);
+      progressBar.style.width = percent + '%';
+      progressBadge.textContent = percent + '% Complete';
+
+      if (percent === 100) {
+        progressText.textContent = 'Lesson complete. Great job!';
+        progressBadge.className = 'font-label-md text-label-md bg-[#27ae60] text-white px-3 py-1 rounded-full';
+      } else if (percent === 0) {
+        progressText.textContent = "Let's get started on your numbers vocabulary!";
+        progressBadge.className = 'font-label-md text-label-md bg-secondary text-white px-3 py-1 rounded-full';
+      } else {
+        progressText.textContent = "Keep going, you're making progress!";
+        progressBadge.className = 'font-label-md text-label-md bg-secondary text-white px-3 py-1 rounded-full';
+      }
+    }
+
+    links.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        const state = link.dataset.state;
+        const url = link.getAttribute('data-href');
+
+        if (state === 'locked') {
+          return;
+        }
+        if (state === 'done') {
+          return;
+        }
+        if (state === 'timer') {
+          if (url) window.open(url, '_blank');
+          return;
         }
 
-        function setTimerData(id, expiryTimestamp) {
-            const timers = getTimerData();
-            if (expiryTimestamp) {
-                timers[id] = expiryTimestamp;
-            } else {
-                delete timers[id];
-            }
-            sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+        // state === 'next'
+        if (url) window.open(url, '_blank');
+
+        const id = link.getAttribute('data-id');
+        const endTime = Date.now() + TIMER_DURATION * 1000;
+        setTimerData(id, endTime);
+        startTimerUI(id, endTime);
+        setTimeout(function () {
+          completeTimer(id);
+        }, TIMER_DURATION * 1000);
+      });
+
+      link.addEventListener('dblclick', function (e) {
+        const state = link.dataset.state;
+        if (state === 'locked') {
+          e.preventDefault();
+          return;
         }
-
-        function clearTimerData(id) {
-            const timers = getTimerData();
-            delete timers[id];
-            sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+        if (state === 'done') {
+          const url = link.getAttribute('data-href');
+          if (url) {
+            window.open(url, '_blank');
+          }
         }
+      });
+    });
 
-        function startTimerUI(id, endTime) {
-            if (activeTimers[id]) {
-                clearInterval(activeTimers[id]);
-            }
-
-            const link = document.querySelector(`a[data-id="${id}"]`);
-            if (!link) return;
-
-            link.classList.add('timer-active');
-
-            let timerSpan = link.querySelector('.timer-display');
-            if (!timerSpan) {
-                const checkSpan = link.querySelector('.check');
-                timerSpan = document.createElement('span');
-                timerSpan.className = 'timer-display';
-                if (checkSpan) {
-                    checkSpan.style.display = 'none';
-                    link.insertBefore(timerSpan, checkSpan);
-                } else {
-                    link.appendChild(timerSpan);
-                }
-            }
-
-            function updateTimer() {
-                const now = Date.now();
-                const remaining = Math.ceil((endTime - now) / 1000);
-
-                if (remaining <= 0) {
-                    timerSpan.textContent = '0:00';
-                    return;
-                }
-
-                const mins = Math.floor(remaining / 60);
-                const secs = remaining % 60;
-                timerSpan.textContent = mins + ':' + secs.toString().padStart(2, '0');
-            }
-
-            updateTimer();
-            activeTimers[id] = setInterval(updateTimer, 1000);
-        }
-
-        function completeTimer(id) {
-            if (activeTimers[id]) {
-                clearInterval(activeTimers[id]);
-                delete activeTimers[id];
-            }
-
-            const link = document.querySelector(`a[data-id="${id}"]`);
-            if (link) {
-                link.classList.remove('timer-active');
-                const timerSpan = link.querySelector('.timer-display');
-                if (timerSpan) {
-                    timerSpan.remove();
-                }
-                const checkSpan = link.querySelector('.check');
-                if (checkSpan) {
-                    checkSpan.style.display = '';
-                }
-            }
-
-            clearTimerData(id);
-            setOpened(id, true);
-        }
-
-        function initTimers() {
-            const timers = getTimerData();
-            const now = Date.now();
-
-            for (const id in timers) {
-                const endTime = timers[id];
-                if (now >= endTime) {
-                    completeTimer(id);
-                } else {
-                    startTimerUI(id, endTime);
-                    const remaining = endTime - now;
-                    setTimeout(function() {
-                        completeTimer(id);
-                    }, remaining);
-                }
-            }
-        }
-
-        function updateUI() {
-            const opened = getOpened();
-            let count = 0;
-
-            links.forEach(function(link, index) {
-                const id = link.getAttribute('data-id');
-                const isOpened = !!opened[id];
-                const isLocked = index > 0 && !opened[links[index - 1].getAttribute('data-id')];
-
-                if (isOpened) {
-                    link.classList.add('opened');
-                    count++;
-                } else {
-                    link.classList.remove('opened');
-                }
-
-                if (isLocked) {
-                    link.classList.add('locked');
-                    link.removeAttribute('href');
-                    link.removeAttribute('target');
-                    let lockSpan = link.querySelector('.lock-icon');
-                    if (!lockSpan) {
-                        const checkSpan = link.querySelector('.check');
-                        lockSpan = document.createElement('span');
-                        lockSpan.className = 'lock-icon';
-                        lockSpan.innerHTML = '&#128274;';
-                        if (checkSpan) {
-                            checkSpan.replaceWith(lockSpan);
-                        } else {
-                            link.appendChild(lockSpan);
-                        }
-                    }
-                } else {
-                    link.classList.remove('locked');
-                    const originalHref = link.getAttribute('data-href');
-                    if (originalHref && !link.getAttribute('href')) {
-                        link.setAttribute('href', originalHref);
-                        link.setAttribute('target', '_blank');
-                    }
-                    let lockSpan = link.querySelector('.lock-icon');
-                    if (lockSpan) {
-                        const checkSpan = document.createElement('span');
-                        checkSpan.className = 'check';
-                        checkSpan.innerHTML = '&#10003;';
-                        lockSpan.replaceWith(checkSpan);
-                    }
-                }
-            });
-
-            const total = links.length;
-            const percent = total === 0 ? 0 : Math.round((count / total) * 100);
-            progressBar.style.width = percent + '%';
-            progressBar.textContent = percent + '%';
-        }
-
-        // guarda href original antes de qualquer modificacao
-        links.forEach(function(link) {
-            link.setAttribute('data-href', link.getAttribute('href'));
-        });
-
-        links.forEach(function(link) {
-            link.addEventListener('click', function(e) {
-                if (link.classList.contains('locked')) {
-                    e.preventDefault();
-                    return;
-                }
-                if (link.classList.contains('opened')) {
-                    e.preventDefault();
-                    return;
-                }
-                if (link.classList.contains('timer-active')) {
-                    e.preventDefault();
-                    const url = link.getAttribute('data-href');
-                    if (url) window.open(url, '_blank');
-                    return;
-                }
-
-                e.preventDefault();
-                const id = link.getAttribute('data-id');
-                const url = link.getAttribute('data-href');
-
-                if (url) window.open(url, '_blank');
-
-                const endTime = Date.now() + TIMER_DURATION * 1000;
-                setTimerData(id, endTime);
-                startTimerUI(id, endTime);
-                setTimeout(function() {
-                    completeTimer(id);
-                }, TIMER_DURATION * 1000);
-            });
-
-            link.addEventListener('dblclick', function(e) {
-                if (link.classList.contains('locked')) {
-                    e.preventDefault();
-                    return;
-                }
-                if (link.classList.contains('opened')) {
-                    const url = link.getAttribute('data-href');
-                    if (url) {
-                        window.open(url, '_blank');
-                    }
-                }
-            });
-        });
-
-        // Inicializa
-        updateUI();
-        initTimers();
-    </script>
+    // Inicializa
+    updateUI();
+    initTimers();
+  </script>
 </body>
+
 </html>
