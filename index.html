@@ -118,6 +118,21 @@
     .material-fill {
       font-variation-settings: 'FILL' 1, 'wght' 500;
     }
+
+    /* Modal transitions */
+    .modal-overlay {
+      transition: opacity 0.2s ease;
+    }
+    .modal-box {
+      transition: transform 0.2s ease, border-color 0.3s ease, background-color 0.3s ease;
+    }
+    .modal-success {
+      border-color: #27ae60 !important;
+      background-color: #f2fbf6 !important;
+    }
+    .modal-success .modal-title {
+      color: #27ae60 !important;
+    }
   </style>
 </head>
 
@@ -239,6 +254,41 @@
     </div>
   </main>
 
+  <!-- Password Modal -->
+  <div id="passwordModal" class="modal-overlay fixed inset-0 bg-black/50 z-[100] hidden items-center justify-center px-4">
+    <div id="modalBox" class="modal-box bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl border-2 border-transparent">
+      <div id="modalHeader">
+        <div class="flex items-center gap-2 mb-2">
+          <span id="modalIcon" class="material-symbols-outlined text-2xl text-[#f59e0b]">pending</span>
+          <h3 id="modalTitle" class="modal-title font-title-md text-title-md text-on-surface">Revisão da Professora</h3>
+        </div>
+        <p class="font-body-md text-body-md text-on-surface-variant text-sm mb-4">
+          Atividade concluída. Insira a senha da professora para liberar o próximo exercício.
+        </p>
+      </div>
+      <div id="modalSuccessHeader" class="hidden">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined text-2xl text-[#27ae60] material-fill">check_circle</span>
+          <h3 class="font-title-md text-title-md text-[#27ae60]">Atividade Aprovada!</h3>
+        </div>
+        <p class="font-body-md text-body-md text-on-surface-variant text-sm mb-4">
+          Próximo exercício liberado.
+        </p>
+      </div>
+      <div id="modalForm">
+        <label class="block font-label-md text-label-md text-on-surface mb-1">Senha</label>
+        <input id="passwordInput" type="password"
+          class="w-full px-3 py-2 rounded-lg border border-border-muted bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent mb-3"
+          placeholder="Digite a senha">
+        <p id="passwordError" class="font-label-sm text-label-sm text-error mb-3 hidden">Senha incorreta.</p>
+        <button id="submitPassword"
+          class="w-full bg-secondary text-white font-label-md text-label-md py-2.5 rounded-lg hover:bg-secondary-fixed-dim transition-all active:scale-[0.98]">
+          Liberar Atividade
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- BottomNavBar (Mobile Only) -->
   <nav
     class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface/90 backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] border-t border-border-muted md:hidden">
@@ -266,31 +316,41 @@
 
   <script>
     const STORAGE_KEY = 'aula_ingles_progresso';
-    const TIMERS_KEY = 'aula_ingles_timers';
-    const TIMER_DURATION = 60; // segundos (1 minuto)
+    const WAITING_KEY = 'aula_ingles_waiting';
+    const TEACHER_PASSWORD_HASH = '432d3fddb71fe6d05451e698e7093295b8a8748f38c6a909c22496a65a5101af';
     const links = Array.from(document.querySelectorAll('#linkList a'));
     const progressBar = document.getElementById('progressBar');
     const progressBadge = document.getElementById('progressBadge');
     const progressText = document.getElementById('progressText');
-    let activeTimers = {}; // id -> intervalId
+
+    // Modal elements
+    const passwordModal = document.getElementById('passwordModal');
+    const modalBox = document.getElementById('modalBox');
+    const modalHeader = document.getElementById('modalHeader');
+    const modalSuccessHeader = document.getElementById('modalSuccessHeader');
+    const modalForm = document.getElementById('modalForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordError = document.getElementById('passwordError');
+    const submitPassword = document.getElementById('submitPassword');
+    let modalActivityId = null;
 
     // ---- Estilos visuais por estado ----
-    // next   = azul/ciano: proxima atividade a ser feita
-    // locked = cinza: bloqueada ate concluir a anterior
-    // timer  = laranja: timer de 3 minutos em andamento
-    // done   = verde: concluida
+    // next            = azul/ciano: proxima atividade a ser feita
+    // locked          = cinza: bloqueada ate concluir a anterior
+    // waiting_review  = amarelo: aguardando aprovacao da professora
+    // done            = verde: concluida
     const ITEM_BASE = 'item group block text-left rounded-xl p-5 transition-all duration-300 relative overflow-hidden w-full no-underline';
     const ITEM_CLASSES = {
       next: 'bg-surface shadow-[0_0_15px_rgba(5,211,248,0.15)] border-2 border-cyan-accent hover:shadow-[0_0_25px_rgba(5,211,248,0.25)] transform hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98] cursor-pointer',
       locked: 'bg-surface-container-low shadow-sm border border-border-muted opacity-70 cursor-not-allowed',
-      timer: 'bg-[#fffaf3] shadow-[0_0_15px_rgba(230,126,34,0.18)] border-2 border-[#e67e22] hover:shadow-[0_0_25px_rgba(230,126,34,0.28)] transform hover:-translate-y-1 cursor-pointer',
+      waiting_review: 'bg-[#fffbeb] shadow-[0_0_15px_rgba(245,158,11,0.15)] border-2 border-[#f59e0b] hover:shadow-[0_0_25px_rgba(245,158,11,0.25)] transform hover:-translate-y-1 cursor-pointer',
       done: 'bg-[#f2fbf6] shadow-sm border-2 border-[#27ae60] cursor-pointer'
     };
     const ICON_BASE = 'icon-box rounded-lg flex-shrink-0 w-12 h-12 flex items-center justify-center font-title-md text-title-md font-bold';
     const ICON_CLASSES = {
       next: 'bg-gradient-to-br from-[#009ddd] to-[#05d3f8] text-white shadow-sm',
       locked: 'bg-surface-variant text-on-surface-variant',
-      timer: 'bg-gradient-to-br from-[#e67e22] to-[#f5b041] text-white shadow-sm',
+      waiting_review: 'bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] text-white shadow-sm',
       done: 'bg-gradient-to-br from-[#27ae60] to-[#58d68d] text-white shadow-sm'
     };
 
@@ -310,29 +370,94 @@
       updateUI();
     }
 
-    function getTimerData() {
+    function getWaiting() {
       try {
-        const data = sessionStorage.getItem(TIMERS_KEY);
+        const data = sessionStorage.getItem(WAITING_KEY);
         return data ? JSON.parse(data) : {};
       } catch (e) {
         return {};
       }
     }
 
-    function setTimerData(id, expiryTimestamp) {
-      const timers = getTimerData();
-      if (expiryTimestamp) {
-        timers[id] = expiryTimestamp;
+    function setWaiting(id, value) {
+      const waiting = getWaiting();
+      if (value) {
+        waiting[id] = true;
       } else {
-        delete timers[id];
+        delete waiting[id];
       }
-      sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+      sessionStorage.setItem(WAITING_KEY, JSON.stringify(waiting));
+      updateUI();
     }
 
-    function clearTimerData(id) {
-      const timers = getTimerData();
-      delete timers[id];
-      sessionStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+    async function sha256(message) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function verifyPassword(input) {
+      const inputHash = await sha256(input);
+      return inputHash === TEACHER_PASSWORD_HASH;
+    }
+
+    function showPasswordModal(id) {
+      modalActivityId = id;
+      passwordInput.value = '';
+      passwordError.classList.add('hidden');
+      passwordInput.disabled = false;
+      submitPassword.disabled = false;
+      submitPassword.textContent = 'Liberar Atividade';
+      modalBox.classList.remove('modal-success');
+      modalHeader.classList.remove('hidden');
+      modalSuccessHeader.classList.add('hidden');
+      modalForm.classList.remove('hidden');
+      passwordModal.classList.remove('hidden');
+      passwordModal.classList.add('flex');
+      setTimeout(() => passwordInput.focus(), 100);
+    }
+
+    function hidePasswordModal() {
+      passwordModal.classList.add('hidden');
+      passwordModal.classList.remove('flex');
+      modalActivityId = null;
+    }
+
+    async function handlePasswordSubmit() {
+      const input = passwordInput.value.trim();
+      if (!input) return;
+
+      passwordInput.disabled = true;
+      submitPassword.disabled = true;
+      submitPassword.textContent = 'Verificando...';
+
+      const isValid = await verifyPassword(input);
+
+      if (!isValid) {
+        passwordError.classList.remove('hidden');
+        passwordInput.disabled = false;
+        submitPassword.disabled = false;
+        submitPassword.textContent = 'Liberar Atividade';
+        passwordInput.focus();
+        return;
+      }
+
+      // Senha correta - mostra sucesso
+      passwordError.classList.add('hidden');
+      modalBox.classList.add('modal-success');
+      modalHeader.classList.add('hidden');
+      modalSuccessHeader.classList.remove('hidden');
+      modalForm.classList.add('hidden');
+
+      // Marca como done após breve delay
+      setTimeout(() => {
+        if (modalActivityId) {
+          setOpened(modalActivityId, true);
+        }
+        hidePasswordModal();
+      }, 800);
     }
 
     function applyState(link, state) {
@@ -362,6 +487,8 @@
       iconBox.className = ICON_BASE + ' ' + ICON_CLASSES[state];
       if (state === 'done') {
         iconBox.innerHTML = '<span class="material-symbols-outlined material-fill">check</span>';
+      } else if (state === 'waiting_review') {
+        iconBox.innerHTML = '<span class="material-symbols-outlined material-fill">pending</span>';
       } else {
         iconBox.textContent = num;
       }
@@ -372,82 +499,31 @@
         status.innerHTML = '<span class="font-title-md text-title-md text-cyan-accent font-bold">' + num + '</span>';
       } else if (state === 'locked') {
         status.innerHTML = '<span class="material-symbols-outlined text-on-surface-variant/50">lock</span>';
-      } else if (state === 'timer') {
-        status.innerHTML = '<span class="timer-display font-title-md text-title-md font-bold text-[#e67e22] tabular-nums">--:--</span>';
+      } else if (state === 'waiting_review') {
+        status.innerHTML = '<button class="call-teacher-btn bg-[#f59e0b] hover:bg-[#d97706] text-white font-label-sm text-label-sm px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-sm whitespace-nowrap">Chamar Professora</button>';
+        const btn = status.querySelector('.call-teacher-btn');
+        if (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showPasswordModal(link.getAttribute('data-id'));
+          });
+        }
       } else {
         status.innerHTML = '<span class="material-symbols-outlined material-fill text-[#27ae60]" style="font-size:28px">check_circle</span>';
       }
     }
 
-    function startTimerUI(id, endTime) {
-      if (activeTimers[id]) {
-        clearInterval(activeTimers[id]);
-      }
-
-      const link = document.querySelector(`a[data-id="${id}"]`);
-      if (!link) return;
-
-      applyState(link, 'timer');
-      const timerSpan = link.querySelector('.timer-display');
-      if (!timerSpan) return;
-
-      function updateTimer() {
-        const now = Date.now();
-        const remaining = Math.ceil((endTime - now) / 1000);
-
-        if (remaining <= 0) {
-          timerSpan.textContent = '0:00';
-          return;
-        }
-
-        const mins = Math.floor(remaining / 60);
-        const secs = remaining % 60;
-        timerSpan.textContent = mins + ':' + secs.toString().padStart(2, '0');
-      }
-
-      updateTimer();
-      activeTimers[id] = setInterval(updateTimer, 1000);
-    }
-
-    function completeTimer(id) {
-      if (activeTimers[id]) {
-        clearInterval(activeTimers[id]);
-        delete activeTimers[id];
-      }
-
-      clearTimerData(id);
-      setOpened(id, true);
-    }
-
-    function initTimers() {
-      const timers = getTimerData();
-      const now = Date.now();
-
-      for (const id in timers) {
-        const endTime = timers[id];
-        if (now >= endTime) {
-          completeTimer(id);
-        } else {
-          startTimerUI(id, endTime);
-          const remaining = endTime - now;
-          setTimeout(function () {
-            completeTimer(id);
-          }, remaining);
-        }
-      }
-    }
-
     function updateUI() {
       const opened = getOpened();
-      const timers = getTimerData();
-      const now = Date.now();
+      const waiting = getWaiting();
       let count = 0;
 
       links.forEach(function (link, index) {
         const id = link.getAttribute('data-id');
         const isOpened = !!opened[id];
+        const isWaiting = !!waiting[id];
         const isLocked = index > 0 && !opened[links[index - 1].getAttribute('data-id')];
-        const hasTimer = !!timers[id] && timers[id] > now;
 
         if (isOpened) count++;
 
@@ -456,8 +532,8 @@
           state = 'done';
         } else if (isLocked) {
           state = 'locked';
-        } else if (hasTimer) {
-          state = 'timer';
+        } else if (isWaiting) {
+          state = 'waiting_review';
         } else {
           state = 'next';
         }
@@ -494,8 +570,8 @@
         if (state === 'done') {
           return;
         }
-        if (state === 'timer') {
-          if (url) window.open(url, '_blank');
+        if (state === 'waiting_review') {
+          // O botão "Chamar Professora" já tem seu próprio listener
           return;
         }
 
@@ -503,32 +579,25 @@
         if (url) window.open(url, '_blank');
 
         const id = link.getAttribute('data-id');
-        const endTime = Date.now() + TIMER_DURATION * 1000;
-        setTimerData(id, endTime);
-        startTimerUI(id, endTime);
-        setTimeout(function () {
-          completeTimer(id);
-        }, TIMER_DURATION * 1000);
+        setWaiting(id, true);
       });
+    });
 
-      link.addEventListener('dblclick', function (e) {
-        const state = link.dataset.state;
-        if (state === 'locked') {
-          e.preventDefault();
-          return;
-        }
-        if (state === 'done') {
-          const url = link.getAttribute('data-href');
-          if (url) {
-            window.open(url, '_blank');
-          }
-        }
-      });
+    // Modal events
+    submitPassword.addEventListener('click', handlePasswordSubmit);
+    passwordInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        handlePasswordSubmit();
+      }
+    });
+    passwordModal.addEventListener('click', function (e) {
+      if (e.target === passwordModal) {
+        hidePasswordModal();
+      }
     });
 
     // Inicializa
     updateUI();
-    initTimers();
   </script>
 </body>
 
