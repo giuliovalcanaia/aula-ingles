@@ -157,21 +157,7 @@
             font-size: 0.8rem;
             line-height: 20px;
         }
-        .reset-btn {
-            display: block;
-            margin: 30px auto 0;
-            padding: 10px 20px;
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.2s;
-        }
-        .reset-btn:hover {
-            background-color: #c0392b;
-        }
+
     </style>
 </head>
 <body>
@@ -195,7 +181,6 @@
             </ul>
         </div>
 
-        <button class="reset-btn" id="resetBtn">Limpar Progresso</button>
     </div>
 
     <script>
@@ -204,7 +189,6 @@
         const TIMER_DURATION = 3 * 60; // 3 minutos em segundos
         const links = document.querySelectorAll('#linkList a');
         const progressBar = document.getElementById('progressBar');
-        const resetBtn = document.getElementById('resetBtn');
         let activeTimers = {}; // id -> intervalId
 
         function getOpened() {
@@ -433,27 +417,6 @@
                     }
                 }
             });
-        });
-
-        resetBtn.addEventListener('click', function() {
-            if (confirm('Tem certeza que deseja limpar todo o progresso?')) {
-                sessionStorage.removeItem(STORAGE_KEY);
-                sessionStorage.removeItem(TIMERS_KEY);
-                for (const id in activeTimers) {
-                    clearInterval(activeTimers[id]);
-                }
-                activeTimers = {};
-                document.querySelectorAll('.timer-display').forEach(function(el) {
-                    el.remove();
-                });
-                document.querySelectorAll('.check').forEach(function(el) {
-                    el.style.display = '';
-                });
-                document.querySelectorAll('.timer-active').forEach(function(el) {
-                    el.classList.remove('timer-active');
-                });
-                updateUI();
-            }
         });
 
         // Inicializa
