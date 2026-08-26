@@ -404,6 +404,10 @@
           e.stopPropagation();
           tryUnlock();
         });
+        input.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
         input.addEventListener('keydown', function (e) {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -473,7 +477,7 @@
           return;
         }
         if (state === 'waiting_review') {
-          // O botão "Chamar Professora" já tem seu próprio listener
+          if (url) window.open(url, '_blank');
           return;
         }
 
