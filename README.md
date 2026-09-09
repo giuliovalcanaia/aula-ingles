@@ -1,20 +1,52 @@
-# Aula de Inglês - Exercícios de Vocabulary: Clothes
+# Activity Tracker
 
-Aplicação web interativa para organizar e acompanhar o progresso de exercícios de vocabulário em inglês sobre roupas (*clothes*). O projeto utiliza uma interface moderna e gamificada, onde os alunos avançam sequencialmente entre as atividades e a professora libera cada etapa com uma senha.
+Uma aplicação web leve e interativa para gestão sequencial de atividades educacionais. Projetada para ambientes de sala de aula onde o professor acompanha o progresso individual dos alunos em tempo real, liberando cada etapa conforme a conclusão das atividades anteriores.
+
+---
+
+## Conceito
+
+O **Activity Tracker** funciona como um hub centralizado para listas de exercícios ou conteúdos externos. O professor configura uma sequência de links (atividades), e cada aluno avança no seu próprio ritmo. O professor pode circular entre os computadores, visualizar o status de cada aluno e desbloquear as próximas etapas instantaneamente com uma senha mestra.
+
+---
+
+## Como Funciona
+
+### Para o Aluno
+1. Abre a aplicação no navegador.
+2. Visualiza a lista de atividades disponíveis.
+3. Clica na atividade atual (destacada) para abrir o exercício externo em uma nova aba.
+4. Ao retornar, a atividade fica marcada como *Aguardando Revisão*.
+5. Aguarda o professor validar para que a próxima atividade seja liberada.
+
+### Para o Professor
+1. Acompanha a barra de progresso de cada aluno individualmente.
+2. Identifica rapidamente quem está aguardando revisão (status amarelo).
+3. Insere a senha mestra no campo de liberação para aprovar a atividade.
+4. O próximo exercício é desbloqueado automaticamente para o aluno.
+
+---
+
+## Estados das Atividades
+
+| Estado | Cor | Significado |
+|--------|-----|-------------|
+| `next` | Azul/Ciano | Próxima atividade disponível para o aluno |
+| `waiting_review` | Amarelo | Atividade acessada, aguardando aprovação do professor |
+| `done` | Verde | Atividade concluída e aprovada |
+| `locked` | Cinza | Bloqueada até que a atividade anterior seja aprovada |
 
 ---
 
 ## Funcionalidades
 
-- **Lista sequencial de exercícios**: 6 atividades externas do [AgendaWeb](https://agendaweb.org) focadas em vocabulário de roupas.
-- **Barra de progresso em tempo real**: visualiza o percentual de conclusão da aula.
-- **Sistema de bloqueio e liberação**:
-  - Próxima atividade destacada em azul/ciano.
-  - Atividades futuras bloqueadas até que a anterior seja concluída.
-  - Após o aluno acessar a atividade, o status muda para *aguardando revisão* (amarelo).
-  - A professora insere a senha para aprovar e liberar a próxima etapa.
-- **Persistência local**: o progresso é salvo no `sessionStorage` do navegador.
-- **Design responsivo**: adaptado para desktop e mobile, com visual baseado em Material Design 3 e Tailwind CSS.
+- **Progressão sequencial**: atividades são desbloqueadas uma a uma.
+- **Barra de progresso individual**: percentual de conclusão em tempo real.
+- **Sistema de aprovação por senha**: apenas o professor libera novas etapas.
+- **Persistência de sessão**: o progresso do aluno é mantido durante a navegação (via `sessionStorage`).
+- **Design responsivo**: funciona em desktops, notebooks e tablets.
+- **Tema visual moderno**: baseado em Material Design 3 com Tailwind CSS.
+- **Zero dependências de build**: funciona diretamente no navegador, sem compilação.
 
 ---
 
@@ -22,15 +54,16 @@ Aplicação web interativa para organizar e acompanhar o progresso de exercício
 
 ```
 .
-├── index.html      # Estrutura da página e configurações do Tailwind
-├── app.js          # Lógica de interação, estados e progresso
-├── config.js       # Lista de exercícios e hash da senha da professora
-└── README.md       # Este arquivo
+├── index.html      # Interface da aplicação e configuração de tema
+├── app.js          # Lógica de interação, estados e controle de progresso
+├── config.js       # Lista de atividades e hash da senha de aprovação
+├── favicon.svg     # Ícone da aplicação
+└── README.md       # Documentação
 ```
 
 ---
 
-## Tecnologias Utilizadas
+## Tecnologias
 
 - **HTML5** semântico
 - **Tailwind CSS** (via CDN) com tema customizado
@@ -39,49 +72,51 @@ Aplicação web interativa para organizar e acompanhar o progresso de exercício
 
 ---
 
-## Como Usar
-
-1. Clone ou baixe este repositório.
-2. Abra o arquivo `index.html` em um navegador moderno.
-3. O aluno clica na atividade destacada para abrir o exercício externo.
-4. Ao retornar à página, a atividade ficará no estado *Aguardando Revisão*.
-5. A professora digita a senha no campo amarelo e confirma para liberar a próxima atividade.
-
-> **Nota**: como o progresso é armazenado no `sessionStorage`, ele será perdido ao fechar a aba do navegador.
-
----
-
-## Estados das Atividades
-
-| Estado | Cor | Significado |
-|--------|-----|-------------|
-| `next` | Azul/Ciano | Próxima atividade a ser realizada |
-| `waiting_review` | Amarelo | Aguardando aprovação da professora |
-| `done` | Verde | Atividade concluída e aprovada |
-| `locked` | Cinza | Bloqueada até concluir a anterior |
-
----
-
 ## Personalização
 
-Para adicionar novos exercícios ou alterar a senha da professora, edite o arquivo `config.js`:
+### Adicionar ou alterar atividades
+
+Edite o arquivo `config.js`:
 
 ```js
 export const lessons = [
   {
-    id: "exercicio-1",
-    href: "https://link-do-exercicio.com",
-    title: "Título do Exercício",
-    description: "Breve descrição da atividade."
+    id: "atividade-1",
+    href: "https://link-da-atividade.com",
+    title: "Título da Atividade",
+    description: "Breve descrição do que o aluno deve fazer."
   },
-  // ...
+  // Adicione mais atividades...
 ];
 ```
 
-A senha é armazenada como um hash SHA-256. Para gerar um novo hash, você pode usar o console do navegador ou qualquer ferramenta online de SHA-256.
+### Alterar a senha de aprovação
+
+A senha é armazenada como hash SHA-256 no `config.js`:
+
+```js
+export const TEACHER_PASSWORD_HASH = 'seu-hash-aqui';
+```
+
+Para gerar um novo hash, utilize o console do navegador ou uma ferramenta online de SHA-256.
+
+### Adaptar para outras disciplinas
+
+Basta alterar o título no `index.html` e substituir os links e descrições no `config.js`. A lógica de progresso, cores e fluxo de aprovação permanecem os mesmos para qualquer conteúdo.
+
+---
+
+## Uso em Sala de Aula
+
+1. **Configure** a lista de atividades no `config.js` antes da aula.
+2. **Distribua** o arquivo `index.html` (ou hospede em um servidor local/simples).
+3. **Cada aluno** abre a aplicação em seu navegador.
+4. O **professor circula** pela sala, aprova as atividades concluídas e acompanha o progresso.
+
+> **Nota**: o progresso é armazenado no `sessionStorage` do navegador. Se o aluno fechar a aba, o progresso será reiniciado. Isso é intencional para uso em sessões de aula individuais.
 
 ---
 
 ## Licença
 
-Este projeto é de uso educacional e pode ser adaptado livremente para outras turmas ou conteúdos.
+Este projeto é de uso educacional e pode ser adaptado livremente para qualquer disciplina, turma ou contexto de ensino.
