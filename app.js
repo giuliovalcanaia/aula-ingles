@@ -1,7 +1,50 @@
-import { TEACHER_PASSWORD_HASH, lessons } from './config.js';
+import { TEACHER_PASSWORD_HASH, lessons, appConfig } from './config.js';
 
-const STORAGE_KEY = 'aula_ingles_progresso';
-const WAITING_KEY = 'aula_ingles_waiting';
+const STORAGE_KEY = appConfig.storagePrefix + '_progresso';
+const WAITING_KEY = appConfig.storagePrefix + '_waiting';
+
+// ---- Aplicar configurações dinâmicas da página ----
+if (appConfig.pageTitle) {
+  document.title = appConfig.pageTitle;
+}
+
+if (appConfig.favicon) {
+  let faviconLink = document.querySelector('link[rel="icon"]');
+  if (!faviconLink) {
+    faviconLink = document.createElement('link');
+    faviconLink.rel = 'icon';
+    document.head.appendChild(faviconLink);
+  }
+  faviconLink.type = appConfig.favicon.endsWith('.svg') ? 'image/svg+xml' : 'image/x-icon';
+  faviconLink.href = appConfig.favicon;
+}
+
+if (appConfig.mainTitle) {
+  const mainTitleEl = document.getElementById('mainTitle');
+  if (mainTitleEl) mainTitleEl.textContent = appConfig.mainTitle;
+}
+
+if (appConfig.subtitle) {
+  const subtitleEl = document.getElementById('subtitle');
+  if (subtitleEl) subtitleEl.textContent = appConfig.subtitle;
+}
+
+if (appConfig.progressTitle) {
+  const progressTitleEl = document.getElementById('progressTitle');
+  if (progressTitleEl) progressTitleEl.textContent = appConfig.progressTitle;
+}
+
+function getProgressText(key) {
+  if (appConfig.progressTexts && appConfig.progressTexts[key]) {
+    return appConfig.progressTexts[key];
+  }
+  const defaults = {
+    empty: "Let's get started!",
+    inProgress: "Keep going, you're making progress!",
+    complete: "All done! Great job!"
+  };
+  return defaults[key] || '';
+}
 
 function renderLinks() {
   const container = document.getElementById('linkList');
@@ -236,13 +279,13 @@ function updateUI() {
   progressBadge.textContent = percent + '% Complete';
 
   if (percent === 100) {
-    progressText.textContent = 'Lesson complete. Great job!';
+    progressText.textContent = getProgressText('complete');
     progressBadge.className = 'font-label-md text-label-md bg-[#27ae60] text-white px-3 py-1 rounded-full';
   } else if (percent === 0) {
-    progressText.textContent = "Let's get started on your vocabulary exercise!";
+    progressText.textContent = getProgressText('empty');
     progressBadge.className = 'font-label-md text-label-md bg-secondary text-white px-3 py-1 rounded-full';
   } else {
-    progressText.textContent = "Keep going, you're making progress!";
+    progressText.textContent = getProgressText('inProgress');
     progressBadge.className = 'font-label-md text-label-md bg-secondary text-white px-3 py-1 rounded-full';
   }
 }
