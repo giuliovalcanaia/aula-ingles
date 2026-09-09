@@ -1,40 +1,60 @@
 export const TEACHER_PASSWORD_HASH = '50f20ba4109cc4bdead7a2e42ea52cdf35c4ec3debe51afae2516415ed8b6a65';
 
+export const appConfig = {
+  pageTitle: "Aula de Inglês - Exercícios de Feelings",
+  favicon: "favicon.svg",
+  mainTitle: "Aula de Inglês",
+  subtitle: "Exercícios de Vocabulary - Feelings (Sentimentos)",
+  progressTitle: "Lesson Progress",
+  progressTexts: {
+    empty: "Let's get started on your feelings vocabulary!",
+    inProgress: "Keep going, you're making progress!",
+    complete: "Lesson complete. Great job!"
+  },
+  storagePrefix: "aula_ingles"
+};
+
 export const lessons = [
   {
-    id: "clothes-1",
-    href: "https://agendaweb.org/exercises/vocabulary/clothes/words-pictures-1.htm",
-    title: "Clothes - Words & Pictures 1",
-    description: "Match clothes words to pictures."
+    id: "feelings-1",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-quiz-images.htm",
+    title: "Feelings - Quiz with Images",
+    description: "Identify emotions through pictures."
   },
   {
-    id: "clothes-2",
-    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-1-match.htm",
-    title: "Clothes - Match 1",
-    description: "Match clothes vocabulary items."
+    id: "feelings-2",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-match.htm",
+    title: "Feelings - Match",
+    description: "Match feelings words with their meanings."
   },
   {
-    id: "clothes-3",
-    href: "https://agendaweb.org/exercises/vocabulary/clothes/quiz-pictures-1.htm",
-    title: "Clothes - Quiz 1",
-    description: "Test your clothes knowledge."
+    id: "feelings-3",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-test.htm",
+    title: "Feelings - Test",
+    description: "Test your knowledge of emotions vocabulary."
   },
   {
-    id: "clothes-4",
-    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-1.htm",
-    title: "Clothes - Exercise 1",
-    description: "Practice clothes vocabulary."
+    id: "feelings-4",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-words-pictures.htm",
+    title: "Feelings - Words & Pictures",
+    description: "Connect emotion words to pictures."
   },
   {
-    id: "clothes-5",
-    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-multiple.htm",
-    title: "Clothes - Multiple Choice",
-    description: "Choose the correct clothes words."
+    id: "feelings-5",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-1.htm",
+    title: "Feelings - Exercise 1",
+    description: "Practice emotions vocabulary."
   },
   {
-    id: "clothes-6",
-    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-words.htm",
-    title: "Clothes - Words",
-    description: "Write and learn clothes words."
+    id: "feelings-6",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-quiz.htm",
+    title: "Feelings - Quiz",
+    description: "Answer questions about feelings and emotions."
+  },
+  {
+    id: "feelings-7",
+    href: "https://agendaweb.org/exercises/vocabulary/feelings/emotions-game.htm",
+    title: "Feelings - Game",
+    description: "Play and learn emotions vocabulary."
   }
 ];
