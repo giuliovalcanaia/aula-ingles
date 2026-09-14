@@ -1,60 +1,78 @@
 export const TEACHER_PASSWORD_HASH = '50f20ba4109cc4bdead7a2e42ea52cdf35c4ec3debe51afae2516415ed8b6a65';
 
 export const appConfig = {
-  pageTitle: "Aula de Inglês - Números e Animais",
+  pageTitle: "Aula de Inglês - Rotinas Diárias",
   favicon: "favicon.svg",
   mainTitle: "Aula de Inglês",
-  subtitle: "Exercícios de Vocabulary - Numbers & Animals",
+  subtitle: "Exercícios de Vocabulary - Daily Routines",
   progressTitle: "Lesson Progress",
   progressTexts: {
-    empty: "Let's get started on your numbers and animals vocabulary!",
+    empty: "Let's get started on your daily routines vocabulary!",
     inProgress: "Keep going, you're making progress!",
     complete: "Lesson complete. Great job!"
   },
-  storagePrefix: "aula_numbers_animals"
+  storagePrefix: "aula_daily_routines"
 };
 
 export const lessons = [
   {
-    id: "animals-missing-vowels",
-    href: "https://www.englisch-hilfen.de/en/exercises/languages/missing-vowels-animals.htm",
-    title: "Animals - Missing Vowels",
-    description: "Fill in the missing vowels to complete animal names."
+    id: "daily-routines-1-words-pictures",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-words-pictures-1.htm",
+    title: "Daily Routines 1 - Words & Pictures",
+    description: "Learn daily routine words with pictures."
   },
   {
-    id: "lesson-1-animals-numbers",
-    href: "https://wordwall.net/resource/75796966/ingl%C3%A9s/lesson-1-animals-and-numbers",
-    title: "Animals & Numbers - Lesson 1",
-    description: "Practice animals and numbers vocabulary."
+    id: "daily-routines-1-match",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-1-match.htm",
+    title: "Daily Routines 1 - Match",
+    description: "Match daily routine activities with their meanings."
   },
   {
-    id: "numbers-animals-wordwall",
-    href: "https://wordwall.net/pt-br/community/numbers/animals",
-    title: "Numbers & Animals",
-    description: "Match numbers and animals in this interactive game."
+    id: "daily-routines-1-game",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-1-game.htm",
+    title: "Daily Routines 1 - Game",
+    description: "Play and learn daily routines vocabulary."
   },
   {
-    id: "garden-vocabulary",
-    href: "https://www.englisch-hilfen.de/en/exercises/vocabulary1/garden.htm",
-    title: "Garden Vocabulary",
-    description: "Learn words related to the garden and nature."
+    id: "daily-routines-1-quiz",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-quiz-1.htm",
+    title: "Daily Routines 1 - Quiz",
+    description: "Test your knowledge of daily routines."
   },
   {
-    id: "zoo-animals-1",
-    href: "https://www.englisch-hilfen.de/en/exercises/vocabulary2/zoo1.htm",
-    title: "Zoo Animals 1",
-    description: "Identify animals commonly found at the zoo."
+    id: "daily-routines-2-words-pictures",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-words-pictures-2.htm",
+    title: "Daily Routines 2 - Words & Pictures",
+    description: "More daily routine words with pictures."
   },
   {
-    id: "zoo-animals-2",
-    href: "https://www.englisch-hilfen.de/en/exercises/vocabulary3/zoo2.htm",
-    title: "Zoo Animals 2",
-    description: "Continue practicing zoo animal vocabulary."
+    id: "daily-routines-2-match",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-2-match.htm",
+    title: "Daily Routines 2 - Match",
+    description: "Match more daily routine activities."
   },
   {
-    id: "counting-with-animals",
-    href: "https://www.tinytap.com/activities/g4pl7/play/counting-with-animals",
-    title: "Counting with Animals",
-    description: "Count animals and practice numbers in a fun game."
+    id: "daily-routines-2-game",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-2-game.htm",
+    title: "Daily Routines 2 - Game",
+    description: "Continue playing with daily routines vocabulary."
+  },
+  {
+    id: "daily-routines-3-words-pictures",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-words-pictures-3.htm",
+    title: "Daily Routines 3 - Words & Pictures",
+    description: "Advanced daily routine words with pictures."
+  },
+  {
+    id: "daily-routines-vocabulary",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/routines.htm",
+    title: "Daily Routines - Vocabulary",
+    description: "Review daily routines vocabulary."
+  },
+  {
+    id: "daily-routines-2-quiz",
+    href: "https://agendaweb.org/exercises/vocabulary/daily-routines/activities-quiz-2.htm",
+    title: "Daily Routines 2 - Quiz",
+    description: "More quizzes on daily routines."
   }
 ];
