@@ -1,60 +1,42 @@
 export const TEACHER_PASSWORD_HASH = '50f20ba4109cc4bdead7a2e42ea52cdf35c4ec3debe51afae2516415ed8b6a65';
 
 export const appConfig = {
-  pageTitle: "Aula de Inglês - Numbers and animals",
+  pageTitle: "Aula de Inglês - Prefix and Suffix",
   favicon: "favicon.svg",
   mainTitle: "Aula de Inglês",
-  subtitle: "Exercícios de Vocabulary - Numbers and animals",
+  subtitle: "Exercícios de Grammar - Prefix and Suffix",
   progressTitle: "Lesson Progress",
   progressTexts: {
-    empty: "Let's get started on your numbers and animals vocabulary!",
+    empty: "Let's get started on your prefix and suffix practice!",
     inProgress: "Keep going, you're making progress!",
     complete: "Lesson complete. Great job!"
   },
-  storagePrefix: "aula_numbers_animals"
+  storagePrefix: "aula_prefix_suffix"
 };
 
 export const lessons = [
   {
-    id: "missing-vowels-animals",
-    href: "https://www.englisch-hilfen.de/en/exercises/languages/missing-vowels-animals.htm",
-    title: "Missing Vowels - Animals",
-    description: "Practice animals vocabulary by filling in missing vowels."
+    id: "prefix-suffix-ps013",
+    href: "https://www.english-grammar.at/online_exercises/prefixes-suffixes/ps013.htm",
+    title: "Prefixes and Suffixes - PS013",
+    description: "Practice forming words with prefixes and suffixes."
   },
   {
-    id: "lesson-1-animals-and-numbers",
-    href: "https://wordwall.net/resource/75796966/ingl%C3%A9s/lesson-1-animals-and-numbers",
-    title: "Lesson 1 - Animals and Numbers",
-    description: "Interactive activities about animals and numbers."
+    id: "prefix-suffix-1",
+    href: "https://www.english-grammar.at/online_exercises/prefixes-suffixes/prefixes-suffixes1.htm",
+    title: "Prefixes and Suffixes 1",
+    description: "More practice with prefixes and suffixes."
   },
   {
-    id: "numbers-animals",
-    href: "https://wordwall.net/pt-br/community/numbers/animals",
-    title: "Numbers and Animals",
-    description: "Practice numbers and animals vocabulary."
+    id: "prefix-suffix-2",
+    href: "https://www.english-grammar.at/online_exercises/prefixes-suffixes/prefixes-suffixes2.htm",
+    title: "Prefixes and Suffixes 2",
+    description: "Continue practicing word formation."
   },
   {
-    id: "garden-vocabulary",
-    href: "https://www.englisch-hilfen.de/en/exercises/vocabulary1/garden.htm",
-    title: "Garden Vocabulary",
-    description: "Learn vocabulary related to the garden."
-  },
-  {
-    id: "zoo-vocabulary-1",
-    href: "https://www.englisch-hilfen.de/en/exercises/vocabulary2/zoo1.htm",
-    title: "Zoo Vocabulary 1",
-    description: "Practice zoo animal vocabulary."
-  },
-  {
-    id: "zoo-vocabulary-2",
-    href: "https://www.englisch-hilfen.de/en/exercises/vocabulary3/zoo2.htm",
-    title: "Zoo Vocabulary 2",
-    description: "More practice with zoo animal vocabulary."
-  },
-  {
-    id: "counting-with-animals",
-    href: "https://www.tinytap.com/activities/g4pl7/play/counting-with-animals",
-    title: "Counting with Animals",
-    description: "Practice counting with animals in a fun interactive game."
+    id: "prefix-suffix-3",
+    href: "https://www.english-grammar.at/online_exercises/prefixes-suffixes/prefixes-suffixes3.htm",
+    title: "Prefixes and Suffixes 3",
+    description: "Final practice on prefixes and suffixes."
   }
 ];
