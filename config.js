@@ -1,4 +1,4 @@
-export const TEACHER_PASSWORD_HASH = '50f20ba4109cc4bdead7a2e42ea52cdf35c4ec3debe51afae2516415ed8b6a65';
+export const TEACHER_PASSWORD_HASH = '43a4caf12a4ce405524d1157a89a0ae821e1f7e1fe98dda4fe84c88301a621ef';
 
 export const appConfig = {
   pageTitle: "Aula de Inglês - Prefix and Suffix",
