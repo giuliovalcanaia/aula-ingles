@@ -1,78 +1,54 @@
 export const TEACHER_PASSWORD_HASH = '43a4caf12a4ce405524d1157a89a0ae821e1f7e1fe98dda4fe84c88301a621ef';
 
 export const appConfig = {
-  pageTitle: "Aula de Inglês - Food",
+  pageTitle: "Aula de Inglês - Clothes",
   favicon: "favicon.svg",
   mainTitle: "Aula de Inglês",
-  subtitle: "Exercícios de Vocabulary - Food",
+  subtitle: "Exercícios de Vocabulary - Clothes",
   progressTitle: "Lesson Progress",
   progressTexts: {
-    empty: "Let's get started on your food vocabulary practice!",
+    empty: "Let's get started on your clothes vocabulary practice!",
     inProgress: "Keep going, you're making progress!",
     complete: "Lesson complete. Great job!"
   },
-  storagePrefix: "aula_food"
+  storagePrefix: "aula_clothes"
 };
 
 export const lessons = [
   {
-    id: "food-fruit",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit.htm",
-    title: "Fruit",
-    description: "Learn the names of different fruits."
+    id: "clothes-words-pictures-1",
+    href: "https://agendaweb.org/exercises/vocabulary/clothes/words-pictures-1.htm",
+    title: "Clothes - Words and Pictures 1",
+    description: "Learn clothes vocabulary with pictures."
   },
   {
-    id: "food-fruit-1-match",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-1-match.htm",
-    title: "Fruit - Match 1",
-    description: "Match the fruit names with the correct pictures."
+    id: "clothes-1-match",
+    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-1-match.htm",
+    title: "Clothes - Match 1",
+    description: "Match the clothes words with the correct pictures."
   },
   {
-    id: "food-fruit-1-game",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-1-game.htm",
-    title: "Fruit - Game 1",
-    description: "Play a game to practice fruit vocabulary."
+    id: "clothes-quiz-pictures-1",
+    href: "https://agendaweb.org/exercises/vocabulary/clothes/quiz-pictures-1.htm",
+    title: "Clothes - Quiz Pictures 1",
+    description: "Quiz yourself on clothes vocabulary with pictures."
   },
   {
-    id: "food-fruit-words-pictures",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-words-pictures.htm",
-    title: "Fruit Words and Pictures",
-    description: "Connect fruit words with their pictures."
+    id: "clothes-1",
+    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-1.htm",
+    title: "Clothes 1",
+    description: "Practice the names of different clothes."
   },
   {
-    id: "food-fruit-words",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-words.htm",
-    title: "Fruit Words",
-    description: "Practice spelling the names of fruits."
+    id: "clothes-multiple",
+    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-multiple.htm",
+    title: "Clothes - Multiple Choice",
+    description: "Choose the correct clothes name."
   },
   {
-    id: "food-fruit-words-2",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-words-2.htm",
-    title: "Fruit Words 2",
-    description: "More practice with fruit vocabulary."
-  },
-  {
-    id: "food-fruit-multiple-1",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-multiple-1.htm",
-    title: "Fruit - Multiple Choice 1",
-    description: "Choose the correct fruit name."
-  },
-  {
-    id: "food-fruit-multiple-2",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-multiple-2.htm",
-    title: "Fruit - Multiple Choice 2",
-    description: "More multiple-choice practice with fruits."
-  },
-  {
-    id: "food-fruit-quiz",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-quiz.htm",
-    title: "Fruit Quiz",
-    description: "Test your knowledge of fruit vocabulary."
-  },
-  {
-    id: "food-fruit-2",
-    href: "https://agendaweb.org/exercises/vocabulary/food/fruit-2.htm",
-    title: "Fruit 2",
-    description: "Review and consolidate fruit vocabulary."
+    id: "clothes-words",
+    href: "https://agendaweb.org/exercises/vocabulary/clothes/clothes-words.htm",
+    title: "Clothes Words",
+    description: "Practice spelling the names of clothes."
   }
 ];
