@@ -18,9 +18,6 @@ export default function Login() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Faça login na sua conta</CardTitle>
-          {/*<CardDescription>*/}
-          {/*  Digite o seu email abaixo para entrar*/}
-          {/*</CardDescription>*/}
           <CardAction>
             <Button variant="link">Inscreva-se</Button>
           </CardAction>
@@ -33,8 +30,9 @@ export default function Login() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="nome@exemplo.com"
+                  placeholder="nome@email.com"
                   required
+                  autoFocus
                 />
               </div>
               <div className="grid gap-2">
@@ -59,13 +57,9 @@ export default function Login() {
           <Button variant="outline" className="w-full">
             Entrar com o Google
           </Button>
-          {/*<Link href={"/"}*/}
-          {/*      className={buttonVariants({variant: "link text-foreground"})}>*/}
-          {/*  Voltar*/}
-          {/*</Link>*/}
-          {/*<Button variant="link" className="text-foreground cursor-pointer">*/}
-          {/*  Voltar*/}
-          {/*</Button>*/}
+          <a href={"/"} className={"underline-offset-4 hover:underline"}>
+            Voltar
+          </a>
         </CardFooter>
       </Card>
     </main>
