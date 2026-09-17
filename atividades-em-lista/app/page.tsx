@@ -13,13 +13,13 @@ import { Label } from "@/components/ui/label"
 
 export default function Page() {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center">
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4">
       <nav className="absolute top-4 right-4">
         <a href={"/login"} className={buttonVariants({ variant: "secondary" })}>
-          Área do Professor
+          Fazer login
         </a>
       </nav>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full  max-w-sm">
         <CardHeader>
           <CardTitle>Insira o código da aula abaixo</CardTitle>
         </CardHeader>
