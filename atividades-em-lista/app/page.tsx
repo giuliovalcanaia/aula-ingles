@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Field } from "@/components/ui/field"
 
 export default function Page() {
   return (
@@ -19,30 +20,21 @@ export default function Page() {
           Fazer login
         </a>
       </nav>
-      <Card className="w-full  max-w-sm">
+      <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Insira o código da aula abaixo</CardTitle>
+          <CardTitle>Insira o código da aula:</CardTitle>
         </CardHeader>
         <CardContent>
-          <form>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Input
-                  type="text"
-                  placeholder="Digite aqui"
-                  className="uppercase placeholder:normal-case"
-                  required
-                  autoFocus
-                />
-              </div>
-            </div>
-          </form>
+          <Field orientation="horizontal">
+            <Input
+              type="text"
+              placeholder="Digite aqui"
+              autoFocus
+              className="uppercase placeholder:normal-case"
+            />
+            <Button>Entrar</Button>
+          </Field>
         </CardContent>
-        <CardFooter className="flex-col gap-2">
-          <Button type="submit" className="cursor-pointer w-full">
-            Entrar
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   )
