@@ -13,6 +13,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Page() {
   return (
@@ -42,12 +43,21 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
+          <div className="m-4 space-y-4">
+            <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
+              Atividades
+            </h1>
+              <Card>
+                <CardHeader>
+                  <CardTitle>8 ano - Lista de verbos em inglês</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>8 ano - Lista de verbos em inglês</CardTitle>
+                </CardHeader>
+              </Card>
           </div>
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
         </div>
       </SidebarInset>
     </SidebarProvider>
