@@ -1,0 +1,5 @@
+.idea/
+.next/
+next-env.d.ts
+node_modules/
+tsconfig.tsbuildinfo
