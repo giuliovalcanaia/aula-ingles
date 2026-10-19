@@ -1,72 +1,72 @@
 export const TEACHER_PASSWORD_HASH = '5e807575bc521fa60a78458b620ecc31b978214ebaaf5ad42ed68e4d866b5ec8';
 
 export const appConfig = {
-  pageTitle: "Aula de Inglês - Body Parts",
+  pageTitle: "Aula de Inglês - Present Continuous",
   favicon: "favicon.svg",
   mainTitle: "Aula de Inglês",
-  subtitle: "Exercícios de Vocabulary - Body Parts",
+  subtitle: "Exercícios de Present Continuous",
   progressTitle: "Lesson Progress",
   progressTexts: {
-    empty: "Let's get started on your body parts practice!",
+    empty: "Let's get started on your present continuous practice!",
     inProgress: "Keep going, you're making progress!",
     complete: "Lesson complete. Great job!"
   },
-  storagePrefix: "aula_body_parts"
+  storagePrefix: "aula_present_continuous"
 };
 
 export const lessons = [
   {
-    id: "head-parts-test",
+    id: "present-continuous",
     href: "https://agendaweb.org/exercises/verbs/present-continuous.htm",
-    title: "Head Parts - Test",
-    description: "Test your knowledge of the parts of the head."
+    title: "Present Continuous - Exercises",
+    description: "Overview of present continuous exercises."
   },
   {
-    id: "head-words-pictures",
+    id: "am-is-are",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/am-is-are",
-    title: "Head Words - Pictures",
-    description: "Match head vocabulary to the pictures."
+    title: "Am / Is / Are",
+    description: "Practice the verb to be in the present continuous."
   },
   {
-    id: "head",
+    id: "affirmative",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/affirmative.htm",
-    title: "Head - Vocabulary",
-    description: "Practice vocabulary related to the head."
+    title: "Present Continuous - Affirmative",
+    description: "Build affirmative sentences in the present continuous."
   },
   {
-    id: "arm-leg-parts",
+    id: "am-is-are-write",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/am-is-are-write.html",
-    title: "Arm and Leg Parts",
-    description: "Learn the parts of the arms and legs."
+    title: "Am / Is / Are - Write",
+    description: "Write the correct form of the verb to be."
   },
   {
-    id: "body-parts-pictures-1",
+    id: "ing-forms",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/-ing-forms.htm",
-    title: "Body Parts - Pictures 1",
-    description: "Identify body parts from pictures."
+    title: "ING Forms",
+    description: "Practice forming the -ing form of verbs."
   },
   {
-    id: "body-parts-1",
+    id: "forms",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/forms.htm",
-    title: "Body Parts - Quiz 1",
-    description: "Practice body parts vocabulary."
+    title: "Present Continuous - Forms",
+    description: "Review all forms of the present continuous."
   },
   {
-    id: "body-multiple-1",
+    id: "affirmative-forms",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/affirmative-forms.htm",
-    title: "Body Parts - Multiple Choice 1",
-    description: "Multiple choice exercise on body parts."
+    title: "Affirmative Forms",
+    description: "Complete affirmative present continuous sentences."
   },
   {
-    id: "body-match-1",
+    id: "present-progressive",
     href: "https://agendaweb.org/exercises/verbs/present-progressive.htm",
-    title: "Body Parts - Matching 1",
-    description: "Match the body parts vocabulary."
+    title: "Present Progressive",
+    description: "Practice the present progressive tense."
   },
   {
-    id: "body-parts-game",
+    id: "present-continuous-2",
     href: "https://agendaweb.org/exercises/verbs/present-continuous-2.htm",
-    title: "Body Parts - Game",
-    description: "Learn body parts with a fun interactive game."
+    title: "Present Continuous - Exercises 2",
+    description: "More present continuous practice."
   }
 ];
