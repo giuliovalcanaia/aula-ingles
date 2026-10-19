@@ -17,55 +17,55 @@ export const appConfig = {
 export const lessons = [
   {
     id: "head-parts-test",
-    href: "https://agendaweb.org/exercises/vocabulary/body/head-parts-test.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous.htm",
     title: "Head Parts - Test",
     description: "Test your knowledge of the parts of the head."
   },
   {
     id: "head-words-pictures",
-    href: "https://agendaweb.org/exercises/vocabulary/body/head-words-pictures.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/am-is-are",
     title: "Head Words - Pictures",
     description: "Match head vocabulary to the pictures."
   },
   {
     id: "head",
-    href: "https://agendaweb.org/exercises/vocabulary/body/head.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/affirmative.htm",
     title: "Head - Vocabulary",
     description: "Practice vocabulary related to the head."
   },
   {
     id: "arm-leg-parts",
-    href: "https://agendaweb.org/exercises/vocabulary/body/arm-leg-parts.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/am-is-are-write.html",
     title: "Arm and Leg Parts",
     description: "Learn the parts of the arms and legs."
   },
   {
     id: "body-parts-pictures-1",
-    href: "https://agendaweb.org/exercises/vocabulary/body/body-parts-pictures-1.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/-ing-forms.htm",
     title: "Body Parts - Pictures 1",
     description: "Identify body parts from pictures."
   },
   {
     id: "body-parts-1",
-    href: "https://agendaweb.org/exercises/vocabulary/body/body-parts-1.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/forms.htm",
     title: "Body Parts - Quiz 1",
     description: "Practice body parts vocabulary."
   },
   {
     id: "body-multiple-1",
-    href: "https://agendaweb.org/exercises/vocabulary/body/body-multiple-1.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/affirmative-forms.htm",
     title: "Body Parts - Multiple Choice 1",
     description: "Multiple choice exercise on body parts."
   },
   {
     id: "body-match-1",
-    href: "https://agendaweb.org/exercises/vocabulary/body/body-match-1.htm",
+    href: "https://agendaweb.org/exercises/verbs/present-progressive.htm",
     title: "Body Parts - Matching 1",
     description: "Match the body parts vocabulary."
   },
   {
     id: "body-parts-game",
-    href: "https://www.gamestolearnenglish.com/body-parts/",
+    href: "https://agendaweb.org/exercises/verbs/present-continuous-2.htm",
     title: "Body Parts - Game",
     description: "Learn body parts with a fun interactive game."
   }
