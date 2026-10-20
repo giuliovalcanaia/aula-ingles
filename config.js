@@ -1,72 +1,78 @@
-export const TEACHER_PASSWORD_HASH = '5e807575bc521fa60a78458b620ecc31b978214ebaaf5ad42ed68e4d866b5ec8';
+export const TEACHER_PASSWORD_HASH = 'cbe1dbcd749e0047eeb7f6d12bc2ead908f948278e7bac3df9f6220aa11fd801';
 
 export const appConfig = {
-  pageTitle: "Aula de Inglês - Present Continuous",
+  pageTitle: "Aula de Inglês - Can / Can't",
   favicon: "favicon.svg",
   mainTitle: "Aula de Inglês",
-  subtitle: "Exercícios de Present Continuous",
+  subtitle: "Exercícios de Can / Can't",
   progressTitle: "Lesson Progress",
   progressTexts: {
-    empty: "Let's get started on your present continuous practice!",
+    empty: "Let's get started on your can / can't practice!",
     inProgress: "Keep going, you're making progress!",
     complete: "Lesson complete. Great job!"
   },
-  storagePrefix: "aula_present_continuous"
+  storagePrefix: "aula_can_cant"
 };
 
 export const lessons = [
   {
-    id: "present-continuous",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous.htm",
-    title: "Present Continuous - Exercises",
-    description: "Overview of present continuous exercises."
+    id: "can-cant-2",
+    href: "https://agendaweb.org/exercises/verbs/can/can-cant-2.htm",
+    title: "Can / Can't - Exercise 2",
+    description: "Practice using can and can't in sentences."
   },
   {
-    id: "am-is-are",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/am-is-are",
-    title: "Am / Is / Are",
-    description: "Practice the verb to be in the present continuous."
+    id: "affirmative-negative",
+    href: "https://agendaweb.org/exercises/verbs/can/affirmative-negative.htm",
+    title: "Can - Affirmative / Negative",
+    description: "Choose between affirmative and negative forms of can."
   },
   {
-    id: "affirmative",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/affirmative.htm",
-    title: "Present Continuous - Affirmative",
-    description: "Build affirmative sentences in the present continuous."
+    id: "affirmative-negative-write",
+    href: "https://agendaweb.org/exercises/verbs/can/affirmative-negative-write.htm",
+    title: "Can - Affirmative / Negative (Write)",
+    description: "Write affirmative and negative sentences with can."
   },
   {
-    id: "am-is-are-write",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/am-is-are-write.html",
-    title: "Am / Is / Are - Write",
-    description: "Write the correct form of the verb to be."
+    id: "can-cant-present-simple",
+    href: "https://agendaweb.org/exercises/verbs/can/can-cant-present-simple.htm",
+    title: "Can / Can't - Present Simple",
+    description: "Use can and can't in present simple sentences."
   },
   {
-    id: "ing-forms",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/-ing-forms.htm",
-    title: "ING Forms",
-    description: "Practice forming the -ing form of verbs."
+    id: "can-cant-test-1",
+    href: "https://agendaweb.org/exercises/verbs/can/can-cant-test-1.html",
+    title: "Can / Can't - Test 1",
+    description: "First test on can and can't."
   },
   {
-    id: "forms",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/forms.htm",
-    title: "Present Continuous - Forms",
-    description: "Review all forms of the present continuous."
+    id: "can-cant-test-2",
+    href: "https://agendaweb.org/exercises/verbs/can/can-cant-test-2.html",
+    title: "Can / Can't - Test 2",
+    description: "Second test on can and can't."
   },
   {
-    id: "affirmative-forms",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-progressive/affirmative-forms.htm",
-    title: "Affirmative Forms",
-    description: "Complete affirmative present continuous sentences."
+    id: "can-cant",
+    href: "https://agendaweb.org/exercises/verbs/can/can-cant.htm",
+    title: "Can / Can't - Exercises",
+    description: "General exercises on can and can't."
   },
   {
-    id: "present-progressive",
-    href: "https://agendaweb.org/exercises/verbs/present-progressive.htm",
-    title: "Present Progressive",
-    description: "Practice the present progressive tense."
+    id: "can-present",
+    href: "https://agendaweb.org/exercises/verbs/can/present.htm",
+    title: "Can - Present",
+    description: "Practice can in the present tense."
   },
   {
-    id: "present-continuous-2",
-    href: "https://agendaweb.org/exercises/verbs/present-continuous-2.htm",
-    title: "Present Continuous - Exercises 2",
-    description: "More present continuous practice."
+    id: "yes-no-questions-quiz",
+    href: "https://agendaweb.org/exercises/verbs/can/yes-no-questions-quiz.htm",
+    title: "Yes / No Questions - Quiz",
+    description: "Quiz on yes / no questions with can."
+  },
+  {
+    id: "affirmative-negative-interrogative-write-1",
+    href: "https://agendaweb.org/exercises/verbs/can/affirmative-negative-interrogative-write-1.htm",
+    title: "Affirmative, Negative & Interrogative - Write",
+    description: "Write all three forms with can: affirmative, negative and questions."
   }
 ];
