@@ -20,7 +20,7 @@ export function JoinCodeForm() {
     const value = codigo.trim().toUpperCase()
 
     if (!value) {
-      toast.add({ type: "warning", title: "Informe o código da aula." })
+      toast.add({ type: "warning", title: "Informe o código da turma." })
       return
     }
 
@@ -28,7 +28,7 @@ export function JoinCodeForm() {
 
     const supabase = createClient()
     const { data: valido, error: validateError } = await supabase.rpc(
-      "validate_activity_code",
+      "validate_join_code",
       { p_codigo: value }
     )
 

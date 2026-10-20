@@ -12,7 +12,13 @@ export type StudentLink = {
   status: ActivityStatus
 }
 
-export function StudentLinkList({ links }: { links: StudentLink[] }) {
+export function StudentLinkList({
+  aplicacaoId,
+  links,
+}: {
+  aplicacaoId: number
+  links: StudentLink[]
+}) {
   return (
     <div className="space-y-4">
       {links.map((link) => (
@@ -23,13 +29,17 @@ export function StudentLinkList({ links }: { links: StudentLink[] }) {
           status={link.status}
           footer={
             link.status === "fazendo" ? (
-              <ConcludeLinkDialog linkId={link.id} titulo={link.titulo} />
+              <ConcludeLinkDialog
+                aplicacaoId={aplicacaoId}
+                linkId={link.id}
+                titulo={link.titulo}
+              />
             ) : undefined
           }
           onBeforeNavigate={
             link.status === "aberta" || link.status === "fazendo"
               ? async () => {
-                  await markLinkAsStarted(link.id)
+                  await markLinkAsStarted(aplicacaoId, link.id)
                 }
               : undefined
           }

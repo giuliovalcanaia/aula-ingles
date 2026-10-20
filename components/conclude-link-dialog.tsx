@@ -23,15 +23,19 @@ const errorMessages: Record<string, string> = {
   invalid_password: "Senha incorreta. Confira com o professor.",
   link_locked: "Este link não está disponível para conclusão.",
   password_not_set: "O professor ainda não definiu a senha desta atividade.",
+  application_closed: "Esta turma foi encerrada pelo professor.",
+  not_in_application: "Você não está nesta turma. Entre novamente.",
   not_a_student: "Sessão expirada. Entre novamente.",
   not_authenticated: "Sessão expirada. Entre novamente.",
   password_required: "Digite a senha.",
 }
 
 export function ConcludeLinkDialog({
+  aplicacaoId,
   linkId,
   titulo,
 }: {
+  aplicacaoId: number
   linkId: number
   titulo: string
 }) {
@@ -51,7 +55,7 @@ export function ConcludeLinkDialog({
     }
 
     startTransition(async () => {
-      const result = await completeLink(linkId, value)
+      const result = await completeLink(aplicacaoId, linkId, value)
 
       if (result.error) {
         toast.add({

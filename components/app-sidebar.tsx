@@ -16,7 +16,6 @@ import {
   FolderIcon,
   GalleryVerticalEndIcon,
   LayoutListIcon,
-  MapIcon,
   Plus,
 } from "lucide-react"
 
@@ -51,11 +50,6 @@ export function AppSidebar({
       name: "Nova atividade",
       url: "/painel/atividades/nova",
       icon: <Plus />,
-    },
-    {
-      name: "Turmas",
-      url: "/painel/turmas",
-      icon: <MapIcon />,
     },
     {
       name: "Pastas",

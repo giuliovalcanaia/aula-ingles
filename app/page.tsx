@@ -12,7 +12,7 @@ export default function Page() {
       </nav>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Insira o código da aula:</CardTitle>
+          <CardTitle>Insira o código da turma:</CardTitle>
         </CardHeader>
         <CardContent>
           <JoinCodeForm />

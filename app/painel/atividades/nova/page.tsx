@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "lucide-react"
 import { createAtividade } from "@/app/painel/actions"
 import { ActivityForm } from "@/components/painel/activity-form"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import { flattenPastas } from "@/lib/pastas"
 
@@ -12,7 +12,7 @@ export default async function Page() {
   const supabase = await createClient()
 
   const [{ data: turmas }, { data: pastas }] = await Promise.all([
-    supabase.from("turmas").select("id, nome").order("nome"),
+    supabase.from("turmas").select("nome").order("nome"),
     supabase.from("pastas").select("id, nome, parent_id").order("nome"),
   ])
 
@@ -31,38 +31,19 @@ export default async function Page() {
         </h1>
         <p className="text-sm text-muted-foreground">
           A atividade nasce como rascunho. Depois de adicionar os links, você
-          publica para os alunos poderem entrar.
+          publica para os alunos poderem entrar com o código de cada turma.
         </p>
       </div>
 
-      {!turmas || turmas.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Você precisa de uma turma primeiro</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Cada atividade pertence a uma turma.
-            </p>
-            <Link
-              href="/painel/turmas"
-              className={buttonVariants({ variant: "default" })}
-            >
-              Criar turma
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="pt-6">
-            <ActivityForm
-              action={createAtividade}
-              turmas={turmas}
-              pastas={flattenPastas(pastas ?? [])}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="pt-6">
+          <ActivityForm
+            action={createAtividade}
+            pastas={flattenPastas(pastas ?? [])}
+            turmasExistentes={(turmas ?? []).map((turma) => turma.nome)}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

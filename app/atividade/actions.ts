@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
 
-export async function markLinkAsStarted(linkId: number) {
+export async function markLinkAsStarted(aplicacaoId: number, linkId: number) {
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
 
@@ -13,6 +13,7 @@ export async function markLinkAsStarted(linkId: number) {
   }
 
   const { error } = await supabase.rpc("update_my_progress", {
+    p_aplicacao_id: aplicacaoId,
     p_link_id: linkId,
     p_status: "fazendo",
   })
@@ -25,7 +26,11 @@ export async function markLinkAsStarted(linkId: number) {
   return { error: null }
 }
 
-export async function completeLink(linkId: number, senha: string) {
+export async function completeLink(
+  aplicacaoId: number,
+  linkId: number,
+  senha: string
+) {
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
 
@@ -34,6 +39,7 @@ export async function completeLink(linkId: number, senha: string) {
   }
 
   const { error } = await supabase.rpc("complete_link", {
+    p_aplicacao_id: aplicacaoId,
     p_link_id: linkId,
     p_senha: senha,
   })

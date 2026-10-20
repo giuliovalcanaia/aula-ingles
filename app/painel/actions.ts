@@ -12,8 +12,16 @@ export type ActionResult = {
   success?: string | null
 }
 
+type Supabase = Awaited<ReturnType<typeof createClient>>
+
+type AplicacaoInput = {
+  turma: string
+  data: string | null
+}
+
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 const STATUSES = ["aberta", "fazendo", "concluida", "bloqueada"] as const
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 function field(formData: FormData, name: string) {
   const value = formData.get(name)
@@ -47,6 +55,36 @@ function isHttpUrl(value: string) {
   }
 }
 
+function normalizeDate(value: string | null | undefined) {
+  if (!value) return null
+  return DATE_PATTERN.test(value) ? value : null
+}
+
+function parseAplicacoes(raw: string): AplicacaoInput[] | null {
+  if (!raw) return null
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+
+    const aplicacoes: AplicacaoInput[] = []
+
+    for (const item of parsed) {
+      if (typeof item !== "object" || item === null) continue
+      const turma = String((item as { turma?: unknown }).turma ?? "").trim()
+      const data = normalizeDate(
+        String((item as { data?: unknown }).data ?? "").trim() || null
+      )
+
+      if (turma) aplicacoes.push({ turma, data })
+    }
+
+    return aplicacoes
+  } catch {
+    return null
+  }
+}
+
 async function getTeacher() {
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
@@ -67,85 +105,72 @@ async function getTeacher() {
 
 function revalidatePainel(extra?: string) {
   revalidatePath("/painel")
-  revalidatePath("/painel/turmas")
   revalidatePath("/painel/pastas")
   if (extra) revalidatePath(extra)
 }
 
-// ---------------------------------------------------------
-// Turmas
-// ---------------------------------------------------------
+async function generateCode(supabase: Supabase) {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let code = ""
+    for (let i = 0; i < 6; i++) {
+      code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]
+    }
 
-export async function createTurma(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+    const { data } = await supabase
+      .from("aplicacoes")
+      .select("id")
+      .eq("codigo", code)
+      .maybeSingle()
 
-  const nome = field(formData, "nome")
-  if (!nome) return fail("Informe o nome da turma.")
+    if (!data) return code
+  }
 
-  const { error } = await teacher.supabase
-    .from("turmas")
-    .insert({ nome, professor_id: teacher.professorId })
-
-  if (error) return fail("Não foi possível criar a turma.")
-
-  revalidatePainel()
-  return ok("Turma criada.")
+  return null
 }
 
-export async function updateTurma(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+async function resolveTurmaId(
+  supabase: Supabase,
+  professorId: number,
+  nome: string
+) {
+  const nomeNormalizado = nome.trim()
 
-  const id = idField(formData, "id")
-  const nome = field(formData, "nome")
-
-  if (!id) return fail("Turma inválida.")
-  if (!nome) return fail("Informe o nome da turma.")
-
-  const { error } = await teacher.supabase
+  const { data: existentes } = await supabase
     .from("turmas")
-    .update({ nome })
-    .eq("id", id)
+    .select("id, nome")
+    .eq("professor_id", professorId)
 
-  if (error) return fail("Não foi possível renomear a turma.")
+  const match = (existentes ?? []).find(
+    (turma) => turma.nome.trim().toLowerCase() === nomeNormalizado.toLowerCase()
+  )
 
-  revalidatePainel()
-  return ok("Turma atualizada.")
-}
+  if (match) return match.id
 
-export async function deleteTurma(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+  const { data, error } = await supabase
+    .from("turmas")
+    .insert({ nome: nomeNormalizado, professor_id: professorId })
+    .select("id")
+    .single()
 
-  const id = idField(formData, "id")
-  if (!id) return fail("Turma inválida.")
+  if (error || !data) {
+    const { data: reconsulta } = await supabase
+      .from("turmas")
+      .select("id")
+      .eq("professor_id", professorId)
+      .eq("nome", nomeNormalizado)
+      .maybeSingle()
 
-  const { error } = await teacher.supabase.from("turmas").delete().eq("id", id)
+    return reconsulta?.id ?? null
+  }
 
-  if (error) return fail("Não foi possível excluir a turma.")
-
-  revalidatePainel()
-  return ok("Turma excluída.")
+  return data.id
 }
 
 // ---------------------------------------------------------
 // Pastas
 // ---------------------------------------------------------
 
-async function pastaDescendants(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  rootId: number
-) {
+async function pastaDescendants(supabase: Supabase, rootId: number) {
   const { data } = await supabase.from("pastas").select("id, parent_id")
   const children = new Map<number, number[]>()
 
@@ -252,34 +277,6 @@ export async function deletePasta(
 // Atividades
 // ---------------------------------------------------------
 
-async function generateCode(
-  supabase: Awaited<ReturnType<typeof createClient>>
-) {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    let code = ""
-    for (let i = 0; i < 6; i++) {
-      code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]
-    }
-
-    const { data } = await supabase
-      .from("atividades")
-      .select("id")
-      .eq("codigo_atividade", code)
-      .maybeSingle()
-
-    if (!data) return code
-  }
-
-  return null
-}
-
-function normalizeCode(value: string) {
-  return value
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 12)
-}
-
 export async function createAtividade(
   _prev: ActionResult,
   formData: FormData
@@ -288,34 +285,15 @@ export async function createAtividade(
   if (!teacher) return fail("Sessão expirada. Entre novamente.")
 
   const titulo = field(formData, "titulo")
-  const turmaId = idField(formData, "turma_id")
   const pastaId = idField(formData, "pasta_id")
-  const dataRealizacao = optionalField(formData, "data_realizacao")
   const senha = field(formData, "senha")
-  const codigoInformado = normalizeCode(field(formData, "codigo_atividade"))
+  const aplicacoes = parseAplicacoes(field(formData, "aplicacoes"))
 
   if (!titulo) return fail("Informe o título da atividade.")
-  if (!turmaId) return fail("Selecione uma turma.")
   if (senha.length < 4)
     return fail("A senha precisa ter pelo menos 4 caracteres.")
-
-  let codigo = codigoInformado
-  if (codigo) {
-    if (codigo.length < 4)
-      return fail("O código precisa ter pelo menos 4 caracteres.")
-
-    const { data: existente } = await teacher.supabase
-      .from("atividades")
-      .select("id")
-      .eq("codigo_atividade", codigo)
-      .maybeSingle()
-
-    if (existente) return fail("Já existe uma atividade com esse código.")
-  } else {
-    const gerado = await generateCode(teacher.supabase)
-    if (!gerado)
-      return fail("Não foi possível gerar um código. Tente novamente.")
-    codigo = gerado
+  if (!aplicacoes || aplicacoes.length === 0) {
+    return fail("Adicione pelo menos uma turma para a atividade.")
   }
 
   const { data: atividade, error } = await teacher.supabase
@@ -323,10 +301,7 @@ export async function createAtividade(
     .insert({
       titulo,
       subtitulo: optionalField(formData, "subtitulo"),
-      turma_id: turmaId,
       pasta_id: pastaId,
-      data_realizacao: dataRealizacao,
-      codigo_atividade: codigo,
       professor_id: teacher.professorId,
     })
     .select("id")
@@ -346,6 +321,40 @@ export async function createAtividade(
     return fail("Não foi possível definir a senha da atividade.")
   }
 
+  for (const aplicacao of aplicacoes) {
+    const turmaId = await resolveTurmaId(
+      teacher.supabase,
+      teacher.professorId,
+      aplicacao.turma
+    )
+
+    if (!turmaId) {
+      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+      return fail(`Não foi possível criar a turma "${aplicacao.turma}".`)
+    }
+
+    const codigo = await generateCode(teacher.supabase)
+
+    if (!codigo) {
+      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+      return fail("Não foi possível gerar o código de entrada.")
+    }
+
+    const { error: aplicacaoError } = await teacher.supabase
+      .from("aplicacoes")
+      .insert({
+        atividade_id: atividade.id,
+        turma_id: turmaId,
+        codigo,
+        data: aplicacao.data,
+      })
+
+    if (aplicacaoError) {
+      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+      return fail("Não foi possível criar a turma da atividade.")
+    }
+  }
+
   revalidatePainel()
   redirect(`/painel/atividades/${atividade.id}`)
 }
@@ -361,63 +370,14 @@ export async function updateAtividade(
   if (!id) return fail("Atividade inválida.")
 
   const titulo = field(formData, "titulo")
-  const turmaId = idField(formData, "turma_id")
-  const pastaId = idField(formData, "pasta_id")
-  const codigo = normalizeCode(field(formData, "codigo_atividade"))
-
   if (!titulo) return fail("Informe o título da atividade.")
-  if (!turmaId) return fail("Selecione uma turma.")
-  if (codigo.length < 4)
-    return fail("O código precisa ter pelo menos 4 caracteres.")
-
-  const { data: existente } = await teacher.supabase
-    .from("atividades")
-    .select("id")
-    .eq("codigo_atividade", codigo)
-    .neq("id", id)
-    .maybeSingle()
-
-  if (existente) return fail("Já existe uma atividade com esse código.")
-
-  const { data: atual } = await teacher.supabase
-    .from("atividades")
-    .select("turma_id")
-    .eq("id", id)
-    .maybeSingle()
-
-  if (!atual) return fail("Atividade não encontrada.")
-
-  if (atual.turma_id !== turmaId) {
-    const { data: links } = await teacher.supabase
-      .from("links")
-      .select("id")
-      .eq("atividade_id", id)
-
-    const linkIds = (links ?? []).map((link) => link.id)
-
-    if (linkIds.length > 0) {
-      const { count } = await teacher.supabase
-        .from("progresso_estudante")
-        .select("estudante_id", { count: "exact", head: true })
-        .in("link_id", linkIds)
-
-      if ((count ?? 0) > 0) {
-        return fail(
-          "Não é possível trocar a turma depois que alunos começaram a atividade."
-        )
-      }
-    }
-  }
 
   const { error } = await teacher.supabase
     .from("atividades")
     .update({
       titulo,
       subtitulo: optionalField(formData, "subtitulo"),
-      turma_id: turmaId,
-      pasta_id: pastaId,
-      data_realizacao: optionalField(formData, "data_realizacao"),
-      codigo_atividade: codigo,
+      pasta_id: idField(formData, "pasta_id"),
     })
     .eq("id", id)
 
@@ -462,21 +422,29 @@ export async function publishAtividade(
   const id = idField(formData, "id")
   if (!id) return fail("Atividade inválida.")
 
-  const [{ data: senha }, { count: totalLinks }] = await Promise.all([
-    teacher.supabase
-      .from("atividade_senhas")
-      .select("atividade_id")
-      .eq("atividade_id", id)
-      .maybeSingle(),
-    teacher.supabase
-      .from("links")
-      .select("id", { count: "exact", head: true })
-      .eq("atividade_id", id),
-  ])
+  const [{ data: senha }, { count: totalLinks }, { count: totalAplicacoes }] =
+    await Promise.all([
+      teacher.supabase
+        .from("atividade_senhas")
+        .select("atividade_id")
+        .eq("atividade_id", id)
+        .maybeSingle(),
+      teacher.supabase
+        .from("links")
+        .select("id", { count: "exact", head: true })
+        .eq("atividade_id", id),
+      teacher.supabase
+        .from("aplicacoes")
+        .select("id", { count: "exact", head: true })
+        .eq("atividade_id", id),
+    ])
 
   if (!senha) return fail("Defina a senha da atividade antes de publicar.")
   if ((totalLinks ?? 0) === 0) {
     return fail("Adicione pelo menos um link antes de publicar.")
+  }
+  if ((totalAplicacoes ?? 0) === 0) {
+    return fail("Adicione pelo menos uma turma antes de publicar.")
   }
 
   const { error } = await teacher.supabase
@@ -530,6 +498,122 @@ export async function deleteAtividade(
 
   revalidatePainel()
   redirect("/painel")
+}
+
+// ---------------------------------------------------------
+// Turmas da atividade (aplicações)
+// ---------------------------------------------------------
+
+export async function createAplicacao(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const atividadeId = idField(formData, "atividade_id")
+  const turma = field(formData, "turma")
+  const data = normalizeDate(optionalField(formData, "data"))
+
+  if (!atividadeId) return fail("Atividade inválida.")
+  if (!turma) return fail("Informe a turma.")
+
+  const turmaId = await resolveTurmaId(
+    teacher.supabase,
+    teacher.professorId,
+    turma
+  )
+
+  if (!turmaId) return fail("Não foi possível criar a turma.")
+
+  const codigo = await generateCode(teacher.supabase)
+  if (!codigo) return fail("Não foi possível gerar o código de entrada.")
+
+  const { error } = await teacher.supabase.from("aplicacoes").insert({
+    atividade_id: atividadeId,
+    turma_id: turmaId,
+    codigo,
+    data,
+  })
+
+  if (error) return fail("Não foi possível adicionar a turma.")
+
+  revalidatePainel(`/painel/atividades/${atividadeId}`)
+  return ok("Turma adicionada.")
+}
+
+export async function updateAplicacao(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const id = idField(formData, "id")
+  const atividadeId = idField(formData, "atividade_id")
+  const data = normalizeDate(optionalField(formData, "data"))
+
+  if (!id || !atividadeId) return fail("Turma inválida.")
+
+  const { error } = await teacher.supabase
+    .from("aplicacoes")
+    .update({ data })
+    .eq("id", id)
+
+  if (error) return fail("Não foi possível salvar a turma.")
+
+  revalidatePainel(`/painel/atividades/${atividadeId}`)
+  return ok("Turma atualizada.")
+}
+
+export async function setAplicacaoStatus(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const id = idField(formData, "id")
+  const atividadeId = idField(formData, "atividade_id")
+  const status = field(formData, "status")
+
+  if (!id || !atividadeId) return fail("Turma inválida.")
+  if (status !== "aberta" && status !== "encerrada") {
+    return fail("Situação inválida.")
+  }
+
+  const { error } = await teacher.supabase
+    .from("aplicacoes")
+    .update({ status })
+    .eq("id", id)
+
+  if (error) return fail("Não foi possível alterar a turma.")
+
+  revalidatePainel(`/painel/atividades/${atividadeId}`)
+  return ok(status === "encerrada" ? "Turma encerrada." : "Turma reaberta.")
+}
+
+export async function deleteAplicacao(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const id = idField(formData, "id")
+  const atividadeId = idField(formData, "atividade_id")
+
+  if (!id || !atividadeId) return fail("Turma inválida.")
+
+  const { error } = await teacher.supabase
+    .from("aplicacoes")
+    .delete()
+    .eq("id", id)
+
+  if (error) return fail("Não foi possível excluir a turma.")
+
+  revalidatePainel(`/painel/atividades/${atividadeId}`)
+  return ok("Turma excluída.")
 }
 
 // ---------------------------------------------------------
@@ -663,12 +747,12 @@ export async function updateStudentProgress(
   if (!teacher) return fail("Sessão expirada. Entre novamente.")
 
   const atividadeId = idField(formData, "atividade_id")
-  const estudanteId = idField(formData, "estudante_id")
+  const participacaoId = idField(formData, "participacao_id")
   const linkId = idField(formData, "link_id")
   const status = field(formData, "status")
   const pontuacaoRaw = field(formData, "pontuacao")
 
-  if (!atividadeId || !estudanteId || !linkId) {
+  if (!atividadeId || !participacaoId || !linkId) {
     return fail("Progresso inválido.")
   }
 
@@ -688,7 +772,7 @@ export async function updateStudentProgress(
   const { error } = await teacher.supabase
     .from("progresso_estudante")
     .update({ status, pontuacao })
-    .eq("estudante_id", estudanteId)
+    .eq("participacao_id", participacaoId)
     .eq("link_id", linkId)
 
   if (error) return fail("Não foi possível salvar o progresso.")

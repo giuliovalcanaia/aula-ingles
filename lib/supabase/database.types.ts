@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      aplicacoes: {
+        Row: {
+          atividade_id: number
+          codigo: string
+          created_at: string
+          data: string | null
+          id: number
+          status: string
+          turma_id: number
+          updated_at: string
+        }
+        Insert: {
+          atividade_id: number
+          codigo: string
+          created_at?: string
+          data?: string | null
+          id?: number
+          status?: string
+          turma_id: number
+          updated_at?: string
+        }
+        Update: {
+          atividade_id?: number
+          codigo?: string
+          created_at?: string
+          data?: string | null
+          id?: number
+          status?: string
+          turma_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aplicacoes_atividade_id_fkey"
+            columns: ["atividade_id"]
+            isOneToOne: false
+            referencedRelation: "atividades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividade_senhas: {
         Row: {
           atividade_id: number
@@ -45,9 +93,7 @@ export type Database = {
       }
       atividades: {
         Row: {
-          codigo_atividade: string
           created_at: string
-          data_realizacao: string | null
           id: number
           pasta_id: number | null
           professor_id: number
@@ -55,13 +101,10 @@ export type Database = {
           status: string
           subtitulo: string | null
           titulo: string
-          turma_id: number
           updated_at: string
         }
         Insert: {
-          codigo_atividade: string
           created_at?: string
-          data_realizacao?: string | null
           id?: number
           pasta_id?: number | null
           professor_id: number
@@ -69,13 +112,10 @@ export type Database = {
           status?: string
           subtitulo?: string | null
           titulo: string
-          turma_id: number
           updated_at?: string
         }
         Update: {
-          codigo_atividade?: string
           created_at?: string
-          data_realizacao?: string | null
           id?: number
           pasta_id?: number | null
           professor_id?: number
@@ -83,7 +123,6 @@ export type Database = {
           status?: string
           subtitulo?: string | null
           titulo?: string
-          turma_id?: number
           updated_at?: string
         }
         Relationships: [
@@ -101,44 +140,43 @@ export type Database = {
             referencedRelation: "professores"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "atividades_turma_same_professor_fk"
-            columns: ["turma_id", "professor_id"]
-            isOneToOne: false
-            referencedRelation: "turmas"
-            referencedColumns: ["id", "professor_id"]
-          },
         ]
       }
-      estudante_atividade: {
+      participacoes: {
         Row: {
-          atividade_id: number
+          aplicacao_id: number
           concluido_em: string | null
           estudante_id: number
+          id: number
           iniciado_em: string
+          nome: string
         }
         Insert: {
-          atividade_id: number
+          aplicacao_id: number
           concluido_em?: string | null
           estudante_id: number
+          id?: number
           iniciado_em?: string
+          nome: string
         }
         Update: {
-          atividade_id?: number
+          aplicacao_id?: number
           concluido_em?: string | null
           estudante_id?: number
+          id?: number
           iniciado_em?: string
+          nome?: string
         }
         Relationships: [
           {
-            foreignKeyName: "estudante_atividade_atividade_id_fkey"
-            columns: ["atividade_id"]
+            foreignKeyName: "participacoes_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
             isOneToOne: false
-            referencedRelation: "atividades"
+            referencedRelation: "aplicacoes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "estudante_atividade_estudante_id_fkey"
+            foreignKeyName: "participacoes_estudante_id_fkey"
             columns: ["estudante_id"]
             isOneToOne: false
             referencedRelation: "estudantes"
@@ -148,41 +186,27 @@ export type Database = {
       }
       estudantes: {
         Row: {
-          codigo_aluno: string
           created_at: string
           id: number
           nome: string
-          turma_id: number
           updated_at: string
           user_id: string
         }
         Insert: {
-          codigo_aluno: string
           created_at?: string
           id?: number
           nome: string
-          turma_id: number
           updated_at?: string
           user_id: string
         }
         Update: {
-          codigo_aluno?: string
           created_at?: string
           id?: number
           nome?: string
-          turma_id?: number
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "estudantes_turma_id_fkey"
-            columns: ["turma_id"]
-            isOneToOne: false
-            referencedRelation: "turmas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       links: {
         Row: {
@@ -291,41 +315,41 @@ export type Database = {
       progresso_estudante: {
         Row: {
           created_at: string
-          estudante_id: number
           link_id: number
+          participacao_id: number
           pontuacao: number | null
           status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          estudante_id: number
           link_id: number
+          participacao_id: number
           pontuacao?: number | null
           status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          estudante_id?: number
           link_id?: number
+          participacao_id?: number
           pontuacao?: number | null
           status?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "progresso_estudante_estudante_id_fkey"
-            columns: ["estudante_id"]
-            isOneToOne: false
-            referencedRelation: "estudantes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "progresso_estudante_link_id_fkey"
             columns: ["link_id"]
             isOneToOne: false
             referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progresso_estudante_participacao_id_fkey"
+            columns: ["participacao_id"]
+            isOneToOne: false
+            referencedRelation: "participacoes"
             referencedColumns: ["id"]
           },
         ]
@@ -368,7 +392,7 @@ export type Database = {
     }
     Functions: {
       complete_link: {
-        Args: { p_link_id: number; p_senha: string }
+        Args: { p_aplicacao_id: number; p_link_id: number; p_senha: string }
         Returns: Json
       }
       join_activity: {
@@ -384,10 +408,10 @@ export type Database = {
         Returns: undefined
       }
       update_my_progress: {
-        Args: { p_link_id: number; p_status: string }
+        Args: { p_aplicacao_id: number; p_link_id: number; p_status: string }
         Returns: undefined
       }
-      validate_activity_code: { Args: { p_codigo: string }; Returns: boolean }
+      validate_join_code: { Args: { p_codigo: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

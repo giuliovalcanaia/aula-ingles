@@ -27,33 +27,52 @@ export default async function Page({
   searchParams: Promise<{ codigo?: string }>
 }) {
   const { codigo } = await searchParams
-  const codigoAtividade = codigo?.trim().toUpperCase()
+  const codigoEntrada = codigo?.trim().toUpperCase()
 
-  if (!codigoAtividade) redirect("/")
+  if (!codigoEntrada) redirect("/")
 
   const supabase = await createClient()
   const { data: claimsData } = await supabase.auth.getClaims()
   const userId = claimsData?.claims?.sub
 
   if (!userId) {
-    redirect(`/aluno?codigo=${encodeURIComponent(codigoAtividade)}`)
+    redirect(`/aluno?codigo=${encodeURIComponent(codigoEntrada)}`)
   }
 
   const { data: estudante } = await supabase
     .from("estudantes")
-    .select("id, nome")
+    .select("id")
     .eq("user_id", userId)
     .maybeSingle()
 
-  // Sem registro de aluno (sessão nova ou professor): volta para a entrada.
   if (!estudante) {
-    redirect(`/aluno?codigo=${encodeURIComponent(codigoAtividade)}`)
+    redirect(`/aluno?codigo=${encodeURIComponent(codigoEntrada)}`)
+  }
+
+  const { data: aplicacao } = await supabase
+    .from("aplicacoes")
+    .select("id, atividade_id, status, data")
+    .eq("codigo", codigoEntrada)
+    .maybeSingle()
+
+  if (!aplicacao) {
+    redirect(`/aluno?codigo=${encodeURIComponent(codigoEntrada)}`)
+  }
+
+  const { data: participacao } = await supabase
+    .from("participacoes")
+    .select("id, nome, iniciado_em, concluido_em")
+    .eq("aplicacao_id", aplicacao.id)
+    .maybeSingle()
+
+  if (!participacao) {
+    redirect(`/aluno?codigo=${encodeURIComponent(codigoEntrada)}`)
   }
 
   const { data: atividade } = await supabase
     .from("atividades")
-    .select("id, titulo, subtitulo, status, data_realizacao")
-    .eq("codigo_atividade", codigoAtividade)
+    .select("id, titulo, subtitulo, status")
+    .eq("id", aplicacao.atividade_id)
     .maybeSingle()
 
   if (!atividade) {
@@ -61,13 +80,12 @@ export default async function Page({
       <div className="mx-auto flex max-w-4xl flex-col p-4">
         <Card>
           <CardHeader>
-            <p className="font-medium">Atividade não encontrada.</p>
+            <p className="font-medium">
+              Atividade não encontrada ou indisponível.
+            </p>
             <CardDescription>
-              Confira o código com o professor e{" "}
-              <a href="/" className="underline underline-offset-4">
-                tente novamente
-              </a>
-              .
+              Confira o código com o professor. A atividade pode ter sido
+              fechada ou o código pode ser de outra turma.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -91,6 +109,22 @@ export default async function Page({
     )
   }
 
+  if (aplicacao.status === "encerrada") {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col p-4">
+        <Card>
+          <CardHeader>
+            <p className="font-medium">Turma encerrada.</p>
+            <CardDescription>
+              O professor encerrou esta turma. Fale com ele para mais
+              informações.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
   const [{ data: links }, { data: progresso }] = await Promise.all([
     supabase
       .from("links")
@@ -100,7 +134,7 @@ export default async function Page({
     supabase
       .from("progresso_estudante")
       .select("link_id, status")
-      .eq("estudante_id", estudante.id),
+      .eq("participacao_id", participacao.id),
   ])
 
   const statusByLink = new Map(
@@ -130,14 +164,17 @@ export default async function Page({
             {atividade.subtitulo}
           </p>
         )}
-        {atividade.data_realizacao && (
-          <p className="text-sm text-muted-foreground">
-            Data da aula:{" "}
-            {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
-              new Date(`${atividade.data_realizacao}T12:00:00`)
-            )}
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground">
+          Aluno: {participacao.nome}
+          {aplicacao.data && (
+            <>
+              {" · "}Data da aula:{" "}
+              {new Intl.DateTimeFormat("pt-BR", {
+                dateStyle: "short",
+              }).format(new Date(`${aplicacao.data}T12:00:00`))}
+            </>
+          )}
+        </p>
         <Card className="mt-4">
           <CardHeader>
             <Progress value={progressoPercentual} className="w-full">
@@ -154,7 +191,7 @@ export default async function Page({
             Esta atividade ainda não tem links.
           </p>
         ) : (
-          <StudentLinkList links={items} />
+          <StudentLinkList aplicacaoId={aplicacao.id} links={items} />
         )}
       </div>
     </div>

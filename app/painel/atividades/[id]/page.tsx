@@ -8,13 +8,17 @@ import {
 } from "lucide-react"
 
 import {
+  createAplicacao,
   createLink,
+  deleteAplicacao,
   deleteAtividade,
   deleteLink,
   moveLink,
   publishAtividade,
+  setAplicacaoStatus,
   unpublishAtividade,
   updateActivityPassword,
+  updateAplicacao,
   updateAtividade,
   updateLink,
   updateStudentProgress,
@@ -84,23 +88,21 @@ export default async function Page({
 
   const { data: atividade } = await supabase
     .from("atividades")
-    .select(
-      "id, titulo, subtitulo, turma_id, pasta_id, data_realizacao, codigo_atividade, status"
-    )
+    .select("id, titulo, subtitulo, pasta_id, status")
     .eq("id", atividadeId)
     .maybeSingle()
 
   if (!atividade) notFound()
 
   const [
-    { data: turmas },
     { data: pastas },
+    { data: turmas },
     { data: senha },
     { data: links },
-    { data: estudantes },
+    { data: aplicacoes },
   ] = await Promise.all([
-    supabase.from("turmas").select("id, nome").order("nome"),
     supabase.from("pastas").select("id, nome, parent_id").order("nome"),
+    supabase.from("turmas").select("id, nome").order("nome"),
     supabase
       .from("atividade_senhas")
       .select("atividade_id")
@@ -112,36 +114,51 @@ export default async function Page({
       .eq("atividade_id", atividadeId)
       .order("ordem"),
     supabase
-      .from("estudantes")
-      .select("id, nome")
-      .eq("turma_id", atividade.turma_id)
-      .order("nome"),
-  ])
-
-  const linkIds = (links ?? []).map((link) => link.id)
-  const estudanteIds = (estudantes ?? []).map((estudante) => estudante.id)
-
-  const [{ data: progresso }, { data: tempos }] = await Promise.all([
-    supabase
-      .from("progresso_estudante")
-      .select("estudante_id, link_id, status, pontuacao")
-      .in("link_id", linkIds.length > 0 ? linkIds : [-1]),
-    supabase
-      .from("estudante_atividade")
-      .select("estudante_id, iniciado_em, concluido_em")
+      .from("aplicacoes")
+      .select("id, codigo, data, status, turma_id")
       .eq("atividade_id", atividadeId)
-      .in("estudante_id", estudanteIds.length > 0 ? estudanteIds : [-1]),
+      .order("created_at"),
   ])
 
-  const progressoPorAlunoLink = new Map(
-    (progresso ?? []).map((row) => [`${row.estudante_id}:${row.link_id}`, row])
+  const aplicacaoIds = (aplicacoes ?? []).map((aplicacao) => aplicacao.id)
+  const linkIds = (links ?? []).map((link) => link.id)
+
+  const { data: participacoes } = await supabase
+    .from("participacoes")
+    .select("id, aplicacao_id, nome, iniciado_em, concluido_em")
+    .in("aplicacao_id", aplicacaoIds.length > 0 ? aplicacaoIds : [-1])
+    .order("nome")
+
+  const participacaoIds = (participacoes ?? []).map(
+    (participacao) => participacao.id
   )
 
-  const tempoPorAluno = new Map(
-    (tempos ?? []).map((row) => [row.estudante_id, row])
+  const { data: progresso } = await supabase
+    .from("progresso_estudante")
+    .select("participacao_id, link_id, status, pontuacao")
+    .in("participacao_id", participacaoIds.length > 0 ? participacaoIds : [-1])
+    .in("link_id", linkIds.length > 0 ? linkIds : [-1])
+
+  const progressoPorParticipacaoLink = new Map(
+    (progresso ?? []).map((row) => [
+      `${row.participacao_id}:${row.link_id}`,
+      row,
+    ])
   )
 
-  const turma = (turmas ?? []).find((item) => item.id === atividade.turma_id)
+  const participacoesPorAplicacao = new Map<
+    number,
+    NonNullable<typeof participacoes>
+  >()
+  for (const participacao of participacoes ?? []) {
+    const lista = participacoesPorAplicacao.get(participacao.aplicacao_id) ?? []
+    lista.push(participacao)
+    participacoesPorAplicacao.set(participacao.aplicacao_id, lista)
+  }
+
+  const nomeTurma = new Map(
+    (turmas ?? []).map((turma) => [turma.id, turma.nome])
+  )
   const pasta = (pastas ?? []).find((item) => item.id === atividade.pasta_id)
   const publicada = atividade.status === "publicada"
 
@@ -172,15 +189,9 @@ export default async function Page({
               </p>
             )}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span>Turma: {turma?.nome ?? "—"}</span>
               <span>Pasta: {pasta?.nome ?? "Sem pasta"}</span>
-              <span>Data: {formatDate(atividade.data_realizacao)}</span>
-              <span>
-                Código:{" "}
-                <span className="font-mono font-medium text-foreground">
-                  {atividade.codigo_atividade}
-                </span>
-              </span>
+              <span>Turmas: {(aplicacoes ?? []).length}</span>
+              <span>Links: {(links ?? []).length}</span>
             </div>
           </div>
 
@@ -204,22 +215,303 @@ export default async function Page({
               action={deleteAtividade}
               fields={{ id: atividade.id }}
               title={`Excluir a atividade "${atividade.titulo}"?`}
-              description="Os links, o progresso e os tempos dos alunos dessa atividade também serão excluídos. Essa ação não pode ser desfeita."
+              description="As turmas, os links, os nomes e o progresso dos alunos dessa atividade também serão excluídos. Essa ação não pode ser desfeita."
             />
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="links" className="gap-4">
+      <Tabs defaultValue="turmas" className="gap-4">
         <TabsList variant="line">
+          <TabsTrigger value="turmas">
+            Turmas ({(aplicacoes ?? []).length})
+          </TabsTrigger>
           <TabsTrigger value="links">
             Links ({(links ?? []).length})
           </TabsTrigger>
-          <TabsTrigger value="alunos">
-            Alunos ({(estudantes ?? []).length})
-          </TabsTrigger>
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="turmas" className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Adicionar turma</CardTitle>
+              <CardDescription>
+                Cada turma recebe um código de entrada e uma lista de nomes
+                própria.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActionForm action={createAplicacao} className="space-y-3">
+                <input type="hidden" name="atividade_id" value={atividade.id} />
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+                  <div className="space-y-2">
+                    <Label htmlFor="nova-turma">Turma</Label>
+                    <Input
+                      id="nova-turma"
+                      name="turma"
+                      list="turmas-da-atividade"
+                      placeholder="Ex.: 1º ano A"
+                      autoComplete="off"
+                      required
+                    />
+                    <datalist id="turmas-da-atividade">
+                      {(turmas ?? []).map((turma) => (
+                        <option key={turma.id} value={turma.nome} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nova-turma-data">Data (opcional)</Label>
+                    <Input
+                      id="nova-turma-data"
+                      name="data"
+                      type="date"
+                      className="w-40"
+                    />
+                  </div>
+                  <SubmitButton pendingLabel="Adicionando...">
+                    Adicionar turma
+                  </SubmitButton>
+                </div>
+              </ActionForm>
+            </CardContent>
+          </Card>
+
+          {!aplicacoes || aplicacoes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma turma adicionada ainda.
+            </p>
+          ) : (
+            aplicacoes.map((aplicacao) => {
+              const alunos = participacoesPorAplicacao.get(aplicacao.id) ?? []
+              const aberta = aplicacao.status === "aberta"
+
+              return (
+                <Card key={aplicacao.id}>
+                  <CardHeader>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CardTitle>
+                            {nomeTurma.get(aplicacao.turma_id) ?? "Turma"}
+                          </CardTitle>
+                          <Badge variant={aberta ? "default" : "secondary"}>
+                            {aberta ? "Aberta" : "Encerrada"}
+                          </Badge>
+                        </div>
+                        <CardDescription>
+                          Data: {formatDate(aplicacao.data)} · {alunos.length}{" "}
+                          aluno(s)
+                        </CardDescription>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm font-semibold">
+                          {aplicacao.codigo}
+                        </span>
+                        <ActionForm action={setAplicacaoStatus}>
+                          <input type="hidden" name="id" value={aplicacao.id} />
+                          <input
+                            type="hidden"
+                            name="atividade_id"
+                            value={atividade.id}
+                          />
+                          <input
+                            type="hidden"
+                            name="status"
+                            value={aberta ? "encerrada" : "aberta"}
+                          />
+                          <SubmitButton
+                            variant="outline"
+                            size="sm"
+                            pendingLabel="Salvando..."
+                          >
+                            {aberta ? "Encerrar" : "Reabrir"}
+                          </SubmitButton>
+                        </ActionForm>
+                        <ConfirmAction
+                          action={deleteAplicacao}
+                          fields={{
+                            id: aplicacao.id,
+                            atividade_id: atividade.id,
+                          }}
+                          title={`Excluir a turma ${nomeTurma.get(aplicacao.turma_id) ?? ""}?`}
+                          description="A lista de nomes e o progresso dessa turma serão excluídos."
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <ActionForm
+                      action={updateAplicacao}
+                      className="flex flex-wrap items-end gap-2"
+                    >
+                      <input type="hidden" name="id" value={aplicacao.id} />
+                      <input
+                        type="hidden"
+                        name="atividade_id"
+                        value={atividade.id}
+                      />
+                      <div className="space-y-2">
+                        <Label htmlFor={`data-${aplicacao.id}`}>
+                          Data da aula
+                        </Label>
+                        <Input
+                          id={`data-${aplicacao.id}`}
+                          name="data"
+                          type="date"
+                          defaultValue={aplicacao.data ?? ""}
+                          className="w-40"
+                        />
+                      </div>
+                      <SubmitButton variant="outline" size="sm">
+                        Salvar data
+                      </SubmitButton>
+                    </ActionForm>
+
+                    {alunos.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhum aluno entrou nesta turma ainda. Compartilhe o
+                        código {aplicacao.codigo}.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {alunos.map((aluno) => {
+                          const concluidos = (links ?? []).filter(
+                            (link) =>
+                              progressoPorParticipacaoLink.get(
+                                `${aluno.id}:${link.id}`
+                              )?.status === "concluida"
+                          ).length
+
+                          return (
+                            <div
+                              key={aluno.id}
+                              className="rounded-lg border p-3"
+                            >
+                              <details>
+                                <summary className="cursor-pointer text-sm">
+                                  <span className="font-medium">
+                                    {aluno.nome}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {" "}
+                                    · {concluidos}/{(links ?? []).length}{" "}
+                                    concluídos · início{" "}
+                                    {formatDateTime(aluno.iniciado_em)} · fim{" "}
+                                    {formatDateTime(aluno.concluido_em)}
+                                  </span>
+                                </summary>
+                                <div className="mt-3 space-y-2">
+                                  {(links ?? []).map((link, index) => {
+                                    const row =
+                                      progressoPorParticipacaoLink.get(
+                                        `${aluno.id}:${link.id}`
+                                      )
+
+                                    return (
+                                      <ActionForm
+                                        key={link.id}
+                                        action={updateStudentProgress}
+                                        className="flex flex-wrap items-end gap-2 rounded-lg border p-2"
+                                      >
+                                        <input
+                                          type="hidden"
+                                          name="atividade_id"
+                                          value={atividade.id}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="participacao_id"
+                                          value={aluno.id}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="link_id"
+                                          value={link.id}
+                                        />
+                                        <div className="min-w-40 flex-1 text-sm">
+                                          <span className="text-muted-foreground">
+                                            {index + 1}.
+                                          </span>{" "}
+                                          {link.titulo}
+                                          <span className="block text-xs text-muted-foreground">
+                                            {
+                                              progressoLabels[
+                                                row?.status ?? "bloqueada"
+                                              ]
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label
+                                            htmlFor={`status-${aluno.id}-${link.id}`}
+                                            className="text-xs"
+                                          >
+                                            Situação
+                                          </Label>
+                                          <NativeSelect
+                                            id={`status-${aluno.id}-${link.id}`}
+                                            name="status"
+                                            defaultValue={
+                                              row?.status ?? "bloqueada"
+                                            }
+                                            size="sm"
+                                            className="w-full"
+                                          >
+                                            <NativeSelectOption value="bloqueada">
+                                              Bloqueada
+                                            </NativeSelectOption>
+                                            <NativeSelectOption value="aberta">
+                                              Aberta
+                                            </NativeSelectOption>
+                                            <NativeSelectOption value="fazendo">
+                                              Em andamento
+                                            </NativeSelectOption>
+                                            <NativeSelectOption value="concluida">
+                                              Concluída
+                                            </NativeSelectOption>
+                                          </NativeSelect>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label
+                                            htmlFor={`nota-${aluno.id}-${link.id}`}
+                                            className="text-xs"
+                                          >
+                                            Nota
+                                          </Label>
+                                          <Input
+                                            id={`nota-${aluno.id}-${link.id}`}
+                                            name="pontuacao"
+                                            type="number"
+                                            min={0}
+                                            className="w-20"
+                                            defaultValue={row?.pontuacao ?? ""}
+                                            placeholder="—"
+                                          />
+                                        </div>
+                                        <SubmitButton
+                                          variant="outline"
+                                          size="sm"
+                                        >
+                                          Salvar
+                                        </SubmitButton>
+                                      </ActionForm>
+                                    )
+                                  })}
+                                </div>
+                              </details>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
+        </TabsContent>
 
         <TabsContent value="links" className="space-y-3">
           {!links || links.length === 0 ? (
@@ -376,147 +668,14 @@ export default async function Page({
           </Card>
         </TabsContent>
 
-        <TabsContent value="alunos" className="space-y-3">
-          {!estudantes || estudantes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum aluno entrou nesta turma ainda.
-            </p>
-          ) : (
-            estudantes.map((estudante) => {
-              const tempo = tempoPorAluno.get(estudante.id)
-              const concluidos = (links ?? []).filter(
-                (link) =>
-                  progressoPorAlunoLink.get(`${estudante.id}:${link.id}`)
-                    ?.status === "concluida"
-              ).length
-
-              return (
-                <Card key={estudante.id}>
-                  <CardHeader>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <CardTitle>{estudante.nome}</CardTitle>
-                      <Badge variant="secondary">
-                        {concluidos}/{(links ?? []).length} concluídos
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Início: {formatDateTime(tempo?.iniciado_em ?? null)} ·
-                      Conclusão: {formatDateTime(tempo?.concluido_em ?? null)}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <details className="group">
-                      <summary className="cursor-pointer text-sm font-medium">
-                        Ver progresso por link
-                      </summary>
-                      <div className="mt-3 space-y-2">
-                        {(links ?? []).map((link, index) => {
-                          const row = progressoPorAlunoLink.get(
-                            `${estudante.id}:${link.id}`
-                          )
-
-                          return (
-                            <ActionForm
-                              key={link.id}
-                              action={updateStudentProgress}
-                              className="flex flex-wrap items-end gap-2 rounded-lg border p-2"
-                            >
-                              <input
-                                type="hidden"
-                                name="atividade_id"
-                                value={atividade.id}
-                              />
-                              <input
-                                type="hidden"
-                                name="estudante_id"
-                                value={estudante.id}
-                              />
-                              <input
-                                type="hidden"
-                                name="link_id"
-                                value={link.id}
-                              />
-                              <div className="min-w-40 flex-1 text-sm">
-                                <span className="text-muted-foreground">
-                                  {index + 1}.
-                                </span>{" "}
-                                {link.titulo}
-                                <span className="block text-xs text-muted-foreground">
-                                  {progressoLabels[row?.status ?? "bloqueada"]}
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                <Label
-                                  htmlFor={`status-${estudante.id}-${link.id}`}
-                                  className="text-xs"
-                                >
-                                  Situação
-                                </Label>
-                                <NativeSelect
-                                  id={`status-${estudante.id}-${link.id}`}
-                                  name="status"
-                                  defaultValue={row?.status ?? "bloqueada"}
-                                  size="sm"
-                                  className="w-full"
-                                >
-                                  <NativeSelectOption value="bloqueada">
-                                    Bloqueada
-                                  </NativeSelectOption>
-                                  <NativeSelectOption value="aberta">
-                                    Aberta
-                                  </NativeSelectOption>
-                                  <NativeSelectOption value="fazendo">
-                                    Em andamento
-                                  </NativeSelectOption>
-                                  <NativeSelectOption value="concluida">
-                                    Concluída
-                                  </NativeSelectOption>
-                                </NativeSelect>
-                              </div>
-                              <div className="space-y-1">
-                                <Label
-                                  htmlFor={`nota-${estudante.id}-${link.id}`}
-                                  className="text-xs"
-                                >
-                                  Nota
-                                </Label>
-                                <Input
-                                  id={`nota-${estudante.id}-${link.id}`}
-                                  name="pontuacao"
-                                  type="number"
-                                  min={0}
-                                  className="w-20"
-                                  defaultValue={row?.pontuacao ?? ""}
-                                  placeholder="—"
-                                />
-                              </div>
-                              <SubmitButton variant="outline" size="sm">
-                                Salvar
-                              </SubmitButton>
-                            </ActionForm>
-                          )
-                        })}
-                      </div>
-                    </details>
-                  </CardContent>
-                </Card>
-              )
-            })
-          )}
-        </TabsContent>
-
         <TabsContent value="configuracoes" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Dados da atividade</CardTitle>
-              <CardDescription>
-                Mudar a turma só é permitido enquanto nenhum aluno começou.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <ActivityForm
                 action={updateAtividade}
-                turmas={turmas ?? []}
                 pastas={flattenPastas(pastas ?? [])}
                 atividade={atividade}
               />
@@ -528,7 +687,7 @@ export default async function Page({
               <CardTitle>Senha de liberação</CardTitle>
               <CardDescription>
                 {senha
-                  ? "A senha está definida. Você pode trocá-la quando quiser."
+                  ? "A senha está definida. Ela vale para todas as turmas desta atividade."
                   : "Nenhuma senha definida. O aluno não consegue concluir os links sem ela."}
               </CardDescription>
             </CardHeader>

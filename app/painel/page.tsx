@@ -18,37 +18,24 @@ const statusLabels: Record<string, string> = {
   arquivada: "Arquivada",
 }
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
-})
-
-function formatDate(value: string | null) {
-  return value ? dateFormatter.format(new Date(`${value}T12:00:00`)) : null
-}
-
 export default async function Page() {
   const supabase = await createClient()
 
   const [
     { data: atividades },
-    { data: turmas },
     { data: pastas },
     { data: links },
+    { data: aplicacoes },
   ] = await Promise.all([
     supabase
       .from("atividades")
-      .select(
-        "id, titulo, subtitulo, codigo_atividade, turma_id, pasta_id, data_realizacao, status"
-      )
+      .select("id, titulo, subtitulo, pasta_id, status")
       .order("created_at", { ascending: false }),
-    supabase.from("turmas").select("id, nome"),
     supabase.from("pastas").select("id, nome"),
     supabase.from("links").select("id, atividade_id"),
+    supabase.from("aplicacoes").select("id, atividade_id"),
   ])
 
-  const nomesTurmas = new Map(
-    (turmas ?? []).map((turma) => [turma.id, turma.nome])
-  )
   const nomesPastas = new Map(
     (pastas ?? []).map((pasta) => [pasta.id, pasta.nome])
   )
@@ -61,6 +48,14 @@ export default async function Page() {
     )
   }
 
+  const turmasPorAtividade = new Map<number, number>()
+  for (const aplicacao of aplicacoes ?? []) {
+    turmasPorAtividade.set(
+      aplicacao.atividade_id,
+      (turmasPorAtividade.get(aplicacao.atividade_id) ?? 0) + 1
+    )
+  }
+
   return (
     <div className="m-4 max-w-5xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -69,7 +64,7 @@ export default async function Page() {
             Atividades
           </h1>
           <p className="text-sm text-muted-foreground">
-            Crie uma atividade, adicione os links e publique para os alunos.
+            Crie a atividade, adicione os links e as turmas, e publique.
           </p>
         </div>
         <Link
@@ -86,8 +81,8 @@ export default async function Page() {
           <CardHeader>
             <CardTitle>Você ainda não criou nenhuma atividade</CardTitle>
             <CardDescription>
-              Comece criando uma turma e depois uma atividade com os links da
-              aula.
+              Crie uma atividade com os links da aula e as turmas que vão
+              realizá-la.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
@@ -98,10 +93,10 @@ export default async function Page() {
               Criar atividade
             </Link>
             <Link
-              href="/painel/turmas"
+              href="/painel/pastas"
               className={buttonVariants({ variant: "outline" })}
             >
-              Criar turma
+              Organizar pastas
             </Link>
           </CardContent>
         </Card>
@@ -127,25 +122,19 @@ export default async function Page() {
               <CardContent className="space-y-3">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <span>
-                    Turma: {nomesTurmas.get(atividade.turma_id) ?? "—"}
-                  </span>
-                  <span>
                     Pasta:{" "}
                     {atividade.pasta_id
                       ? (nomesPastas.get(atividade.pasta_id) ?? "—")
                       : "Sem pasta"}
                   </span>
                   <span>
+                    {turmasPorAtividade.get(atividade.id) ?? 0} turma(s)
+                  </span>
+                  <span>
                     {linksPorAtividade.get(atividade.id) ?? 0} link(s)
                   </span>
-                  {atividade.data_realizacao && (
-                    <span>Data: {formatDate(atividade.data_realizacao)}</span>
-                  )}
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono text-sm font-medium">
-                    {atividade.codigo_atividade}
-                  </span>
+                <div className="flex justify-end">
                   <Link
                     href={`/painel/atividades/${atividade.id}`}
                     className={buttonVariants({
