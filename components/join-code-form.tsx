@@ -6,12 +6,12 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { toast } from "@/components/ui/toast"
 import { createClient } from "@/lib/supabase/client"
 
 export function JoinCodeForm() {
   const router = useRouter()
   const [codigo, setCodigo] = useState("")
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -20,11 +20,10 @@ export function JoinCodeForm() {
     const value = codigo.trim().toUpperCase()
 
     if (!value) {
-      setError("Informe o código da aula.")
+      toast.add({ type: "warning", title: "Informe o código da aula." })
       return
     }
 
-    setError(null)
     setLoading(true)
 
     const supabase = createClient()
@@ -35,13 +34,21 @@ export function JoinCodeForm() {
 
     if (validateError) {
       setLoading(false)
-      setError("Não foi possível validar o código. Tente novamente.")
+      toast.add({
+        type: "error",
+        title: "Não foi possível validar o código.",
+        description: "Tente novamente.",
+      })
       return
     }
 
     if (!valido) {
       setLoading(false)
-      setError("Código inválido. Confira com o professor.")
+      toast.add({
+        type: "error",
+        title: "Código inválido",
+        description: "Confira o código com o professor.",
+      })
       return
     }
 
@@ -68,11 +75,6 @@ export function JoinCodeForm() {
           {loading ? "Verificando..." : "Entrar"}
         </Button>
       </Field>
-      {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
     </form>
   )
 }
