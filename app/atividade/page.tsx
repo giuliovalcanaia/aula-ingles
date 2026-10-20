@@ -1,47 +1,137 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { redirect } from "next/navigation"
+
+import { StudentLinkList } from "@/components/student-link-list"
+import type { ActivityStatus } from "@/components/clickable-card"
+import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import {
   Progress,
   ProgressLabel,
   ProgressValue,
 } from "@/components/ui/progress"
-import { ClickableCard } from "@/components/clickable-card"
+import { createClient } from "@/lib/supabase/server"
 
+const statuses: ActivityStatus[] = [
+  "aberta",
+  "fazendo",
+  "concluida",
+  "bloqueada",
+]
 
-export default function Page() {
+function toStatus(value: string): ActivityStatus {
+  return statuses.find((status) => status === value) ?? "bloqueada"
+}
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ codigo?: string }>
+}) {
+  const { codigo } = await searchParams
+  const codigoAtividade = codigo?.trim().toUpperCase()
+
+  if (!codigoAtividade) redirect("/")
+
+  const supabase = await createClient()
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const userId = claimsData?.claims?.sub
+
+  if (!userId) {
+    redirect(`/aluno?codigo=${encodeURIComponent(codigoAtividade)}`)
+  }
+
+  const { data: estudante } = await supabase
+    .from("estudantes")
+    .select("id, nome")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  // Sem registro de aluno (sessão nova ou professor): volta para a entrada.
+  if (!estudante) {
+    redirect(`/aluno?codigo=${encodeURIComponent(codigoAtividade)}`)
+  }
+
+  const { data: atividade } = await supabase
+    .from("atividades")
+    .select("id, titulo, subtitulo")
+    .eq("codigo_atividade", codigoAtividade)
+    .maybeSingle()
+
+  if (!atividade) {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col p-4">
+        <Card>
+          <CardHeader>
+            <p className="font-medium">Atividade não encontrada.</p>
+            <CardDescription>
+              Confira o código com o professor e{" "}
+              <a href="/" className="underline underline-offset-4">
+                tente novamente
+              </a>
+              .
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  const [{ data: links }, { data: progresso }] = await Promise.all([
+    supabase
+      .from("links")
+      .select("id, titulo, descricao, href, ordem")
+      .eq("atividade_id", atividade.id)
+      .order("ordem", { ascending: true }),
+    supabase
+      .from("progresso_estudante")
+      .select("link_id, status")
+      .eq("estudante_id", estudante.id),
+  ])
+
+  const statusByLink = new Map(
+    (progresso ?? []).map((row) => [row.link_id, toStatus(row.status)])
+  )
+
+  const items = (links ?? []).map((link) => ({
+    id: link.id,
+    titulo: link.titulo,
+    descricao: link.descricao,
+    href: link.href,
+    status: statusByLink.get(link.id) ?? "bloqueada",
+  }))
+
+  const concluidas = items.filter((item) => item.status === "concluida").length
+  const progressoPercentual =
+    items.length > 0 ? Math.round((concluidas / items.length) * 100) : 0
+
   return (
     <div className="mx-auto flex max-w-4xl flex-col space-y-4">
-      {/*Título e descrição*/}
       <div className="m-4 mt-4">
         <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Título da atividade
+          {atividade.titulo}
         </h1>
-        <p className="text-muted-foreground sm:text-base">
-          Aqui dá para adicionar uma descrição opcional. Caso a atividade exija
-          alguma espécie de enunciado ou algo assim.
-        </p>
+        {atividade.subtitulo && (
+          <p className="text-muted-foreground sm:text-base">
+            {atividade.subtitulo}
+          </p>
+        )}
         <Card className="mt-4">
           <CardHeader>
-            <Progress value={56} className="w-full">
+            <Progress value={progressoPercentual} className="w-full">
               <ProgressLabel>Progresso da Atividade</ProgressLabel>
               <ProgressValue />
             </Progress>
           </CardHeader>
         </Card>
       </div>
-      {/*Cards com os links*/}
-      <div className="m-4 mt-8 space-y-4">
-        <ClickableCard href="#" title="Atividade 1" status="aberta" />
-        <ClickableCard href="#" title="Atividade 2" status="fazendo" />
-        <ClickableCard href="#" title="Atividade 3" status="concluida" />
-        <ClickableCard href="#" title="Atividade 4" status="bloqueada" />
+
+      <div className="m-4 mt-8">
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Esta atividade ainda não tem links.
+          </p>
+        ) : (
+          <StudentLinkList links={items} />
+        )}
       </div>
     </div>
   )

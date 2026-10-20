@@ -1,13 +1,23 @@
-import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card"
-import { LucideRotateCcw, LucideMousePointerClick, CheckCircle2, Lock, LucideRefreshCw} from "lucide-react"
+"use client"
 
-type ActivityStatus = "aberta" | "fazendo" | "concluida" | "bloqueada"
+import { useState } from "react"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  CheckCircle2,
+  Lock,
+  LucideMousePointerClick,
+  LucideRotateCcw,
+} from "lucide-react"
+
+export type ActivityStatus = "aberta" | "fazendo" | "concluida" | "bloqueada"
 
 interface ClickableCardProps {
   href: string
   title: string
   status?: ActivityStatus
   children?: React.ReactNode
+  onBeforeNavigate?: () => Promise<void> | void
 }
 
 const statusStyles: Record<
@@ -57,9 +67,24 @@ export function ClickableCard({
   title,
   status = "aberta",
   children,
+  onBeforeNavigate,
 }: ClickableCardProps) {
   const currentStatus = statusStyles[status]
   const StatusIcon = currentStatus.icon
+  const [navigating, setNavigating] = useState(false)
+
+  async function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (!onBeforeNavigate) return
+
+    event.preventDefault()
+    setNavigating(true)
+
+    try {
+      await onBeforeNavigate()
+    } finally {
+      window.location.assign(href)
+    }
+  }
 
   return (
     <Card
@@ -69,7 +94,9 @@ export function ClickableCard({
         href={currentStatus.disabled ? undefined : href}
         tabIndex={currentStatus.disabled ? -1 : 0}
         aria-disabled={currentStatus.disabled}
+        aria-busy={navigating}
         aria-label={`${title} - Status: ${currentStatus.label}`}
+        onClick={currentStatus.disabled ? undefined : handleClick}
         className={`absolute inset-0 z-10 ${
           currentStatus.disabled ? "pointer-events-none" : "cursor-pointer"
         }`}

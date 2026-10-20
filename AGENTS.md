@@ -26,10 +26,16 @@
 
 ## Current state
 
-- UI shell only: the app still has no auth wiring or data fetching. Forms are static and have no submit handlers.
-- The Supabase project has an empty legacy schema (PascalCase tables) with no RLS policies. The planned auth/schema migration is described in `/home/giulio/.opencode/plan/supabase-auth-plan.md`.
-- Routes: `/` activity-code entry, `/aluno` student nickname, `/atividade` activity detail, `/painel` teacher dashboard, `/login`, `/signup`.
-- The teacher dashboard is `components/app-sidebar.tsx` plus the `nav-*` components; its data is hardcoded sample data.
+- Auth is wired: teacher e-mail/password via `/signup` + `/login`, and students through Supabase anonymous sign-ins.
+- E-mail confirmation is **off** in the Supabase project (built-in mailer is limited to 2 e-mails/hour, no custom SMTP): `signUp` returns a session and `/signup` goes straight to `/painel`. `/auth/confirm` and `/auth/error` are dormant; re-enable confirmation and the no-session branch in `components/signup-form.tsx` together if that ever changes.
+- The Supabase schema is in `snake_case` (`professores`, `turmas`, `pastas`, `atividades`, `links`, `estudantes`, `progresso_estudante`) with RLS on every table. Migrations live in `supabase/migrations/`; the plan that produced them is `/home/giulio/.opencode/plan/supabase-auth-plan.md`.
+- Supabase clients: `lib/supabase/client.ts` (browser), `lib/supabase/server.ts` (`await cookies()`), `lib/supabase/proxy.ts` + root `proxy.ts` (session refresh, Next 16 proxy convention). Use `getClaims()` on the server, never `getSession()`.
+- Authorization helpers are in the `private` schema (`private.current_professor_id()`, etc.) and are used by the RLS policies. Student writes go through the `join_activity` and `update_my_progress` RPCs.
+- Database types are generated: `lib/supabase/database.types.ts`. Regenerate after schema changes instead of editing by hand.
+- Routes: `/` activity-code entry, `/aluno` student name entry, `/atividade` student activity view, `/painel` teacher dashboard (session + professor gate in `app/painel/layout.tsx`), `/login`, `/signup`, `/auth/confirm`, `/auth/error`.
+- The teacher dashboard is `components/app-sidebar.tsx` plus the `nav-*` components. `/painel` lists real activities; navigation items are still placeholders and there is no create/edit UI yet.
+- Student progress status is only changed by the teacher (direct update, allowed by RLS); the student can only mark a link as `fazendo` via `update_my_progress`.
+- Anonymous sign-ins must stay enabled in the Supabase dashboard (Authentication > Sign In / Providers), otherwise `signInAnonymously()` fails with `anonymous_provider_disabled`.
 - User-facing copy is Brazilian Portuguese; keep new UI text in pt-BR.
 - Activity statuses are `"aberta" | "fazendo" | "concluida" | "bloqueada"` in `components/clickable-card.tsx`.
 - Dark mode is class-based via `next-themes`; pressing `d` outside form fields toggles it (`components/theme-provider.tsx`).
@@ -39,3 +45,13 @@
 - TypeScript `strict` is enabled.
 - Match Prettier output: no semicolons, double quotes, 2-space indent, 80 columns. Run `npm run format` before finishing.
 - `.next/`, `next-env.d.ts`, and `*.tsbuildinfo` are generated/ignored; never edit them by hand.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

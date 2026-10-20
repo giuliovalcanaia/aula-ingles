@@ -1,63 +1,152 @@
-import { cn } from "cn"
+"use client"
 
-import { Button, buttonVariants } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+
+import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { createClient } from "@/lib/supabase/client"
+import { cn } from "@/lib/utils"
 
 export function LoginForm({
-                            className,
-                            ...props
-                          }: React.ComponentProps<"form">) {
+  className,
+  ...props
+}: React.ComponentProps<"form">) {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    setError(null)
+    setInfo(null)
+    setNeedsConfirmation(false)
+    setLoading(true)
+
+    const supabase = createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+
+    if (signInError) {
+      setLoading(false)
+
+      if (
+        signInError.code === "email_not_confirmed" ||
+        /not confirmed/i.test(signInError.message)
+      ) {
+        setNeedsConfirmation(true)
+        setError("Confirme o seu e-mail antes de entrar.")
+        return
+      }
+
+      setError("E-mail ou senha inválidos.")
+      return
+    }
+
+    router.push("/painel")
+    router.refresh()
+  }
+
+  async function handleResend() {
+    setInfo(null)
+    setError(null)
+    setLoading(true)
+
+    const supabase = createClient()
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+      },
+    })
+
+    setLoading(false)
+
+    if (resendError) {
+      setError("Não foi possível reenviar agora. Tente novamente mais tarde.")
+      return
+    }
+
+    setNeedsConfirmation(false)
+    setInfo("Enviamos um novo link de confirmação para o seu e-mail.")
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      onSubmit={handleSubmit}
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Entre na sua conta</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Digite o seu email abaixo
+            Digite o seu e-mail e senha para acessar o painel
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">E-mail</FieldLabel>
           <Input
             id="email"
             type="email"
             placeholder="nome@email.com"
             required
             autoFocus
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={loading}
           />
         </Field>
         <Field>
-          <div className="flex items-center">
-            <FieldLabel htmlFor="password">Senha</FieldLabel>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
-            >
-              Esqueceu da sua senha?
-            </a>
-          </div>
-          <Input id="password" type="password" required />
+          <FieldLabel htmlFor="password">Senha</FieldLabel>
+          <Input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={loading}
+          />
         </Field>
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+        {info && (
+          <p className="text-sm text-muted-foreground" role="status">
+            {info}
+          </p>
+        )}
+        {needsConfirmation && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResend}
+            disabled={loading}
+          >
+            Reenviar e-mail de confirmação
+          </Button>
+        )}
         <Field>
-          <Button type="submit">Entrar</Button>
-        </Field>
-        <FieldSeparator>Ou continue com</FieldSeparator>
-        <Field>
-          <Button variant="outline" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                fill="currentColor"
-              />
-            </svg>
-            Entrar com o Google
+          <Button type="submit" disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
           </Button>
           <FieldDescription className="text-center">
             Não tem uma conta?{" "}

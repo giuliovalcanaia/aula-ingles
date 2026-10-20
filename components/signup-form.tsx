@@ -1,4 +1,7 @@
-import { cn } from "cn"
+"use client"
+
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -6,25 +9,83 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { createClient } from "@/lib/supabase/client"
+import { cn } from "@/lib/utils"
 
 export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const [nome, setNome] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    setError(null)
+
+    if (!nome.trim()) {
+      setError("Informe o seu nome.")
+      return
+    }
+
+    if (password.length < 8) {
+      setError("A senha precisa ter pelo menos 8 caracteres.")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem.")
+      return
+    }
+
+    setLoading(true)
+
+    const supabase = createClient()
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: { full_name: nome.trim() },
+      },
+    })
+
+    if (signUpError) {
+      setLoading(false)
+      setError(
+        signUpError.code === "user_already_exists"
+          ? "Este e-mail já tem uma conta. Use o login para entrar."
+          : "Não foi possível criar a conta. Verifique os dados e tente novamente."
+      )
+      return
+    }
+
+    router.push("/painel")
+    router.refresh()
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      onSubmit={handleSubmit}
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Crie sua conta</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Preencha o formulário para criar a sua conta
+            Preencha o formulário para criar a sua conta de professor
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="name">Nome Completo</FieldLabel>
+          <FieldLabel htmlFor="name">Nome completo</FieldLabel>
           <Input
             id="name"
             type="text"
@@ -32,16 +93,24 @@ export function SignupForm({
             required
             className="bg-background"
             autoFocus
+            autoComplete="name"
+            value={nome}
+            onChange={(event) => setNome(event.target.value)}
+            disabled={loading}
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">E-mail</FieldLabel>
           <Input
             id="email"
             type="email"
             placeholder="fulano@email.com"
             required
             className="bg-background"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={loading}
           />
         </Field>
         <Field>
@@ -50,38 +119,46 @@ export function SignupForm({
             id="password"
             type="password"
             required
+            minLength={8}
             className="bg-background"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={loading}
           />
           <FieldDescription>
             Precisa ter pelo menos 8 caracteres.
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="confirm-password">Confirmar Senha</FieldLabel>
+          <FieldLabel htmlFor="confirm-password">Confirmar senha</FieldLabel>
           <Input
             id="confirm-password"
             type="password"
             required
+            minLength={8}
             className="bg-background"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            disabled={loading}
           />
           <FieldDescription>Por favor confirme a sua senha.</FieldDescription>
         </Field>
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
         <Field>
-          <Button type="submit">Criar conta</Button>
-        </Field>
-        <FieldSeparator>Ou continue com</FieldSeparator>
-        <Field>
-          <Button variant="outline" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                fill="currentColor"
-              />
-            </svg>
-            Entre com o Google
+          <Button type="submit" disabled={loading}>
+            {loading ? "Criando conta..." : "Criar conta"}
           </Button>
-          <FieldDescription className="px-6 text-center">
-            Já tem uma conta? <a href={"/login"}>Entre</a>
+          <FieldDescription className="text-center">
+            Já tem uma conta?{" "}
+            <a href="/login" className="underline underline-offset-4">
+              Entre
+            </a>
           </FieldDescription>
         </Field>
       </FieldGroup>

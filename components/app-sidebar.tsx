@@ -13,67 +13,65 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, Plus, TerminalIcon, List, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import { GalleryVerticalEndIcon, List, MapIcon, Plus } from "lucide-react"
 
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
+type Professor = {
+  id: number
+  nome: string
+}
+
+export function AppSidebar({
+  professor,
+  email,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  professor: Professor
+  email?: string
+}) {
+  const teams = [
     {
-      name: "Escola 1",
-      logo: (
-        <GalleryVerticalEndIcon
-        />
-      ),
-      plan: "Enterprise",
+      name: "GV Sistemas",
+      logo: <GalleryVerticalEndIcon />,
+      plan: "Professor",
     },
-  ],
-  navMain: [
-  ],
-  projects: [
+  ]
+
+  const navMain: React.ComponentProps<typeof NavMain>["items"] = []
+
+  const projects = [
     {
-      name: "Historico",
+      name: "Histórico",
       url: "#",
-      icon: (
-        <List
-        />
-      ),
+      icon: <List />,
     },
     {
       name: "Criar nova atividade",
       url: "#",
-      icon: (
-        <Plus
-        />
-      ),
+      icon: <Plus />,
     },
     {
-      name: "Travel",
+      name: "Turmas",
       url: "#",
-      icon: (
-        <MapIcon
-        />
-      ),
+      icon: <MapIcon />,
     },
-  ],
-}
+  ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMain} />
+        <NavProjects projects={projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          user={{
+            name: professor.nome,
+            email: email ?? "sem e-mail",
+          }}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
