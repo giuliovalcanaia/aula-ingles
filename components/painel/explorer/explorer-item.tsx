@@ -1,0 +1,363 @@
+"use client"
+
+import * as React from "react"
+import {
+  ClipboardCopyIcon,
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  FolderIcon,
+  FolderInputIcon,
+  FolderPlusIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
+
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  ContextMenuActions,
+  DropdownMenuActions,
+  type MenuAction,
+} from "@/components/painel/explorer/explorer-menu"
+import {
+  isPasta,
+  type ExplorerItem,
+} from "@/components/painel/explorer/explorer-types"
+import { cn } from "@/lib/utils"
+
+const statusLabels: Record<string, string> = {
+  rascunho: "Rascunho",
+  publicada: "Publicada",
+  arquivada: "Arquivada",
+}
+
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+})
+
+type ExplorerItemProps = {
+  item: ExplorerItem
+  view: "lista" | "grade"
+  onOpen: () => void
+  onNewFolder: () => void
+  onNewActivity: () => void
+  onRename: () => void
+  onDuplicate: () => void
+  onMove: () => void
+  onTogglePublish: () => void
+  onCopyCode: (codigo: string) => void
+  onTrash: () => void
+  onDragStart: (event: React.DragEvent, item: ExplorerItem) => void
+  onDragEnd: () => void
+  onDragOver: (event: React.DragEvent, item: ExplorerItem) => void
+  onDragLeave: () => void
+  onDrop: (event: React.DragEvent, item: ExplorerItem) => void
+  dropActive: boolean
+  disabledDrop: boolean
+}
+
+export function ExplorerItemView({
+  item,
+  view,
+  onOpen,
+  onNewFolder,
+  onNewActivity,
+  onRename,
+  onDuplicate,
+  onMove,
+  onTogglePublish,
+  onCopyCode,
+  onTrash,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  dropActive,
+  disabledDrop,
+}: ExplorerItemProps) {
+  const pasta = isPasta(item)
+  const nome = pasta ? item.nome : item.titulo
+  const descricao = pasta ? null : item.subtitulo
+  const publicada = !pasta && item.status === "publicada"
+
+  const actions: MenuAction[] = [
+    {
+      kind: "item",
+      key: "abrir",
+      label: "Abrir",
+      icon: <ExternalLinkIcon />,
+      shortcut: "Enter",
+      onSelect: onOpen,
+    },
+  ]
+
+  if (pasta) {
+    actions.push(
+      { kind: "separator", key: "sep-acoes" },
+      {
+        kind: "item",
+        key: "nova-subpasta",
+        label: "Nova subpasta",
+        icon: <FolderPlusIcon />,
+        onSelect: onNewFolder,
+      },
+      {
+        kind: "item",
+        key: "nova-atividade",
+        label: "Nova atividade aqui",
+        icon: <PlusIcon />,
+        onSelect: onNewActivity,
+      }
+    )
+  }
+
+  actions.push(
+    { kind: "separator", key: "sep-editar" },
+    {
+      kind: "item",
+      key: "renomear",
+      label: "Renomear",
+      icon: <PencilIcon />,
+      shortcut: "F2",
+      onSelect: onRename,
+    },
+    {
+      kind: "item",
+      key: "duplicar",
+      label: "Duplicar",
+      icon: <CopyIcon />,
+      onSelect: onDuplicate,
+    },
+    {
+      kind: "item",
+      key: "mover",
+      label: "Mover para...",
+      icon: <FolderInputIcon />,
+      onSelect: onMove,
+    }
+  )
+
+  if (!pasta) {
+    actions.push({
+      kind: "item",
+      key: "publicar",
+      label: publicada ? "Voltar para rascunho" : "Publicar",
+      icon: publicada ? <EyeOffIcon /> : <EyeIcon />,
+      onSelect: onTogglePublish,
+    })
+
+    if (item.aplicacoes.length > 0) {
+      actions.push({
+        kind: "sub",
+        key: "copiar-codigo",
+        label: "Copiar código",
+        icon: <ClipboardCopyIcon />,
+        items: item.aplicacoes.map((aplicacao) => ({
+          key: `${aplicacao.turma}-${aplicacao.codigo}`,
+          label: `${aplicacao.turma} · ${aplicacao.codigo}`,
+          onSelect: () => onCopyCode(aplicacao.codigo),
+        })),
+      })
+    }
+  }
+
+  actions.push(
+    { kind: "separator", key: "sep-lixeira" },
+    {
+      kind: "item",
+      key: "lixeira",
+      label: "Mover para a lixeira",
+      icon: <Trash2Icon />,
+      destructive: true,
+      onSelect: onTrash,
+    }
+  )
+
+  function handleOpen(event: React.MouseEvent | React.KeyboardEvent) {
+    if (
+      event.type === "click" &&
+      (event.target as HTMLElement).closest("[data-ignore-open]")
+    ) {
+      return
+    }
+    onOpen()
+  }
+
+  const icone = pasta ? (
+    <FolderIcon
+      className={cn(view === "grade" ? "size-9" : "size-4", "text-primary")}
+    />
+  ) : (
+    <FileTextIcon
+      className={cn(
+        view === "grade" ? "size-9" : "size-4",
+        "text-muted-foreground"
+      )}
+    />
+  )
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger
+        className={cn(
+          "group relative rounded-xl border bg-card text-card-foreground transition-colors outline-none",
+          "hover:border-foreground/20 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring",
+          view === "lista"
+            ? "flex items-center gap-3 px-3 py-2.5"
+            : "flex min-h-32 flex-col gap-3 p-4",
+          dropActive && "border-primary ring-2 ring-primary/40",
+          disabledDrop && "opacity-60"
+        )}
+        role="button"
+        tabIndex={0}
+        aria-label={`Abrir ${nome}`}
+        title={nome}
+        draggable
+        onClick={handleOpen}
+        onKeyDown={(event) => {
+          if ((event.target as HTMLElement).closest("[data-ignore-open]")) {
+            return
+          }
+
+          if (event.key === "F2") {
+            event.preventDefault()
+            onRename()
+            return
+          }
+
+          if (event.key === "Delete") {
+            event.preventDefault()
+            onTrash()
+            return
+          }
+
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            handleOpen(event)
+          }
+        }}
+        onDragStart={(event) => onDragStart(event, item)}
+        onDragEnd={onDragEnd}
+        onDragOver={(event) => onDragOver(event, item)}
+        onDragLeave={onDragLeave}
+        onDrop={(event) => onDrop(event, item)}
+      >
+        {view === "lista" ? (
+          <>
+            {icone}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{nome}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {descricao ||
+                  (pasta
+                    ? `${item.pastaCount} pasta(s) · ${item.atividadeCount} atividade(s)`
+                    : `${item.turmas} turma(s) · ${item.links} link(s)`)}
+              </p>
+            </div>
+            {!pasta && (
+              <span className="hidden shrink-0 text-xs text-muted-foreground md:inline">
+                {dateFormatter.format(new Date(item.updated_at))}
+              </span>
+            )}
+            {!pasta && (
+              <Badge
+                variant={publicada ? "default" : "secondary"}
+                className="hidden shrink-0 sm:inline-flex"
+              >
+                {statusLabels[item.status] ?? item.status}
+              </Badge>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-3">
+              <span className="flex size-12 items-center justify-center rounded-lg bg-muted">
+                {icone}
+              </span>
+              <div
+                data-ignore-open
+                onClick={(event) => event.stopPropagation()}
+              >
+                <ItemDropdown actions={actions} />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className="line-clamp-2 text-sm font-medium">{nome}</p>
+              <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                {descricao ||
+                  (pasta
+                    ? `${item.pastaCount} pasta(s) · ${item.atividadeCount} atividade(s)`
+                    : `${item.turmas} turma(s) · ${item.links} link(s)`)}
+              </p>
+            </div>
+            {!pasta && (
+              <Badge
+                variant={publicada ? "default" : "secondary"}
+                className="w-fit"
+              >
+                {statusLabels[item.status] ?? item.status}
+              </Badge>
+            )}
+          </>
+        )}
+
+        {view === "lista" && (
+          <div
+            data-ignore-open
+            onClick={(event) => event.stopPropagation()}
+            className="shrink-0"
+          >
+            <ItemDropdown actions={actions} />
+          </div>
+        )}
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-60">
+        <ContextMenuGroup>
+          <ContextMenuActions actions={actions} />
+        </ContextMenuGroup>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
+function ItemDropdown({ actions }: { actions: MenuAction[] }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Abrir menu de ações"
+          />
+        }
+      >
+        <MoreHorizontalIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuGroup>
+          <DropdownMenuActions actions={actions} />
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}

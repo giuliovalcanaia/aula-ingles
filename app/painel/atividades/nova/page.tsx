@@ -8,22 +8,44 @@ import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import { flattenPastas } from "@/lib/pastas"
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ pasta?: string }>
+}) {
+  const { pasta } = await searchParams
+  const pastaId = Number(pasta)
+  const pastaSolicitada =
+    Number.isInteger(pastaId) && pastaId > 0 ? pastaId : null
+
   const supabase = await createClient()
 
   const [{ data: turmas }, { data: pastas }] = await Promise.all([
     supabase.from("turmas").select("nome").order("nome"),
-    supabase.from("pastas").select("id, nome, parent_id").order("nome"),
+    supabase
+      .from("pastas")
+      .select("id, nome, parent_id")
+      .is("deleted_at", null)
+      .order("nome"),
   ])
+
+  const pastaPadrao =
+    pastaSolicitada !== null &&
+    (pastas ?? []).some((item) => item.id === pastaSolicitada)
+      ? pastaSolicitada
+      : null
+
+  const voltarHref =
+    pastaPadrao === null ? "/painel" : `/painel/pastas/${pastaPadrao}`
 
   return (
     <div className="m-4 max-w-3xl space-y-6">
       <div className="space-y-2">
         <Link
-          href="/painel"
+          href={voltarHref}
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
-          <ArrowLeftIcon />
+          <ArrowLeftIcon data-icon="inline-start" />
           Voltar
         </Link>
         <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -41,6 +63,7 @@ export default async function Page() {
             action={createAtividade}
             pastas={flattenPastas(pastas ?? [])}
             turmasExistentes={(turmas ?? []).map((turma) => turma.nome)}
+            pastaPadrao={pastaPadrao}
           />
         </CardContent>
       </Card>

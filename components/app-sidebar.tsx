@@ -12,12 +12,9 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import {
-  FolderIcon,
-  GalleryVerticalEndIcon,
-  LayoutListIcon,
-  Plus,
-} from "lucide-react"
+import { GalleryVerticalEndIcon, LayoutListIcon, Plus } from "lucide-react"
+
+import { type PastaRow } from "@/lib/pastas"
 
 type Professor = {
   id: number
@@ -27,10 +24,14 @@ type Professor = {
 export function AppSidebar({
   professor,
   email,
+  pastas,
+  trashCount,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   professor: Professor
   email?: string
+  pastas: PastaRow[]
+  trashCount: number
 }) {
   const teams = [
     {
@@ -42,7 +43,7 @@ export function AppSidebar({
 
   const projects = [
     {
-      name: "Atividades",
+      name: "Explorador",
       url: "/painel",
       icon: <LayoutListIcon />,
     },
@@ -50,11 +51,6 @@ export function AppSidebar({
       name: "Nova atividade",
       url: "/painel/atividades/nova",
       icon: <Plus />,
-    },
-    {
-      name: "Pastas",
-      url: "/painel/pastas",
-      icon: <FolderIcon />,
     },
   ]
 
@@ -64,7 +60,7 @@ export function AppSidebar({
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects items={projects} />
+        <NavProjects items={projects} pastas={pastas} trashCount={trashCount} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

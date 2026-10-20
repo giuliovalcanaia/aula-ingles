@@ -11,7 +11,6 @@ import {
   createAplicacao,
   createLink,
   deleteAplicacao,
-  deleteAtividade,
   deleteLink,
   moveLink,
   publishAtividade,
@@ -27,6 +26,7 @@ import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
 import { ConfirmAction } from "@/components/painel/confirm-action"
 import { SubmitButton } from "@/components/painel/submit-button"
+import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -90,6 +90,7 @@ export default async function Page({
     .from("atividades")
     .select("id, titulo, subtitulo, pasta_id, status")
     .eq("id", atividadeId)
+    .is("deleted_at", null)
     .maybeSingle()
 
   if (!atividade) notFound()
@@ -101,7 +102,11 @@ export default async function Page({
     { data: links },
     { data: aplicacoes },
   ] = await Promise.all([
-    supabase.from("pastas").select("id, nome, parent_id").order("nome"),
+    supabase
+      .from("pastas")
+      .select("id, nome, parent_id")
+      .is("deleted_at", null)
+      .order("nome"),
     supabase.from("turmas").select("id, nome").order("nome"),
     supabase
       .from("atividade_senhas")
@@ -161,15 +166,16 @@ export default async function Page({
   )
   const pasta = (pastas ?? []).find((item) => item.id === atividade.pasta_id)
   const publicada = atividade.status === "publicada"
+  const voltarHref = pasta ? `/painel/pastas/${pasta.id}` : "/painel"
 
   return (
     <div className="m-4 max-w-5xl space-y-6">
       <div className="space-y-2">
         <Link
-          href="/painel"
+          href={voltarHref}
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
-          <ArrowLeftIcon />
+          <ArrowLeftIcon data-icon="inline-start" />
           Voltar
         </Link>
 
@@ -211,11 +217,10 @@ export default async function Page({
                 </SubmitButton>
               </ActionForm>
             )}
-            <ConfirmAction
-              action={deleteAtividade}
-              fields={{ id: atividade.id }}
-              title={`Excluir a atividade "${atividade.titulo}"?`}
-              description="As turmas, os links, os nomes e o progresso dos alunos dessa atividade também serão excluídos. Essa ação não pode ser desfeita."
+            <TrashActivityButton
+              id={atividade.id}
+              nome={atividade.titulo}
+              redirectTo={voltarHref}
             />
           </div>
         </div>

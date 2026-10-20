@@ -35,6 +35,7 @@ type ActivityFormProps = {
   pastas: PastaOption[]
   turmasExistentes?: string[]
   atividade?: AtividadeFormData
+  pastaPadrao?: number | null
 }
 
 export function ActivityForm({
@@ -42,11 +43,13 @@ export function ActivityForm({
   pastas,
   turmasExistentes = [],
   atividade,
+  pastaPadrao = null,
 }: ActivityFormProps) {
   const editando = Boolean(atividade)
   const [aplicacoes, setAplicacoes] = useState<TurmaAplicacao[]>([])
   const [turma, setTurma] = useState("")
   const [data, setData] = useState("")
+  const pastaSelecionada = atividade?.pasta_id ?? pastaPadrao ?? null
 
   function addTurma() {
     const nome = turma.trim()
@@ -105,7 +108,7 @@ export function ActivityForm({
         <NativeSelect
           id="pasta_id"
           name="pasta_id"
-          defaultValue={atividade?.pasta_id?.toString() ?? ""}
+          defaultValue={pastaSelecionada?.toString() ?? ""}
           className="w-full"
         >
           <NativeSelectOption value="">Sem pasta</NativeSelectOption>

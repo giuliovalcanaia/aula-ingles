@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactElement } from "react"
 import { Trash2Icon } from "lucide-react"
 
 import type { ActionResult } from "@/app/painel/actions"
@@ -25,6 +25,7 @@ type ConfirmActionProps = {
   description: string
   confirmLabel?: string
   triggerLabel?: string
+  trigger?: ReactElement
 }
 
 export function ConfirmAction({
@@ -34,17 +35,22 @@ export function ConfirmAction({
   description,
   confirmLabel = "Excluir",
   triggerLabel = "Excluir",
+  trigger,
 }: ConfirmActionProps) {
   const [open, setOpen] = useState(false)
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={<Button variant="ghost" size="icon-sm" />}
-        aria-label={triggerLabel}
-      >
-        <Trash2Icon />
-      </AlertDialogTrigger>
+      {trigger ? (
+        <AlertDialogTrigger render={trigger} />
+      ) : (
+        <AlertDialogTrigger
+          render={<Button variant="ghost" size="icon-sm" />}
+          aria-label={triggerLabel}
+        >
+          <Trash2Icon />
+        </AlertDialogTrigger>
+      )}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

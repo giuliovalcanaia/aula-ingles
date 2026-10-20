@@ -94,6 +94,7 @@ export type Database = {
       atividades: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: number
           pasta_id: number | null
           professor_id: number
@@ -101,10 +102,12 @@ export type Database = {
           status: string
           subtitulo: string | null
           titulo: string
+          trash_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: number
           pasta_id?: number | null
           professor_id: number
@@ -112,10 +115,12 @@ export type Database = {
           status?: string
           subtitulo?: string | null
           titulo: string
+          trash_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: number
           pasta_id?: number | null
           professor_id?: number
@@ -123,6 +128,7 @@ export type Database = {
           status?: string
           subtitulo?: string | null
           titulo?: string
+          trash_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -249,26 +255,32 @@ export type Database = {
       pastas: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: number
           nome: string
           parent_id: number | null
           professor_id: number
+          trash_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: number
           nome: string
           parent_id?: number | null
           professor_id: number
+          trash_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: number
           nome?: string
           parent_id?: number | null
           professor_id?: number
+          trash_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -395,6 +407,18 @@ export type Database = {
         Args: { p_aplicacao_id: number; p_link_id: number; p_senha: string }
         Returns: Json
       }
+      duplicate_atividade: {
+        Args: { p_atividade_id: number }
+        Returns: number
+      }
+      duplicate_pasta: {
+        Args: { p_pasta_id: number }
+        Returns: number
+      }
+      empty_trash: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       join_activity: {
         Args: { p_codigo: string; p_nome: string }
         Returns: Json
@@ -403,9 +427,25 @@ export type Database = {
         Args: { p_direcao: number; p_link_id: number }
         Returns: undefined
       }
+      purge_trash: {
+        Args: { p_trash_id: string }
+        Returns: undefined
+      }
+      restore_trash: {
+        Args: { p_trash_id: string }
+        Returns: undefined
+      }
       set_activity_password: {
         Args: { p_atividade_id: number; p_senha: string }
         Returns: undefined
+      }
+      trash_atividade: {
+        Args: { p_atividade_id: number }
+        Returns: string
+      }
+      trash_pasta: {
+        Args: { p_pasta_id: number }
+        Returns: string
       }
       update_my_progress: {
         Args: { p_aplicacao_id: number; p_link_id: number; p_status: string }

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server"
 export type ActionResult = {
   error: string | null
   success?: string | null
+  trashId?: string | null
 }
 
 type Supabase = Awaited<ReturnType<typeof createClient>>
@@ -42,8 +43,8 @@ function fail(error: string): ActionResult {
   return { error }
 }
 
-function ok(success: string): ActionResult {
-  return { error: null, success }
+function ok(success: string, trashId?: string): ActionResult {
+  return { error: null, success, trashId }
 }
 
 function isHttpUrl(value: string) {
@@ -104,8 +105,8 @@ async function getTeacher() {
 }
 
 function revalidatePainel(extra?: string) {
-  revalidatePath("/painel")
-  revalidatePath("/painel/pastas")
+  revalidatePath("/painel", "layout")
+  revalidatePath("/painel/lixeira")
   if (extra) revalidatePath(extra)
 }
 
@@ -171,7 +172,10 @@ async function resolveTurmaId(
 // ---------------------------------------------------------
 
 async function pastaDescendants(supabase: Supabase, rootId: number) {
-  const { data } = await supabase.from("pastas").select("id, parent_id")
+  const { data } = await supabase
+    .from("pastas")
+    .select("id, parent_id")
+    .is("deleted_at", null)
   const children = new Map<number, number[]>()
 
   for (const pasta of data ?? []) {
@@ -196,6 +200,86 @@ async function pastaDescendants(supabase: Supabase, rootId: number) {
   return result
 }
 
+async function validarDestinoPasta(
+  supabase: Supabase,
+  pastaId: number,
+  parentId: number | null
+): Promise<string | null> {
+  if (parentId === null) return null
+
+  if (parentId === pastaId) {
+    return "Uma pasta não pode ficar dentro dela mesma."
+  }
+
+  const descendants = await pastaDescendants(supabase, pastaId)
+  if (descendants.has(parentId)) {
+    return "Uma pasta não pode ficar dentro de uma subpasta dela."
+  }
+
+  const { data: parent } = await supabase
+    .from("pastas")
+    .select("id")
+    .eq("id", parentId)
+    .is("deleted_at", null)
+    .maybeSingle()
+
+  if (!parent) return "Pasta de destino inválida."
+
+  return null
+}
+
+async function movePastaTo(
+  teacher: NonNullable<Awaited<ReturnType<typeof getTeacher>>>,
+  id: number,
+  parentId: number | null
+): Promise<ActionResult> {
+  const erroDestino = await validarDestinoPasta(teacher.supabase, id, parentId)
+  if (erroDestino) return fail(erroDestino)
+
+  const { data, error } = await teacher.supabase
+    .from("pastas")
+    .update({ parent_id: parentId })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
+
+  if (error || !data) return fail("Pasta não encontrada.")
+
+  revalidatePainel()
+  return ok("Pasta movida.")
+}
+
+async function moveAtividadeTo(
+  teacher: NonNullable<Awaited<ReturnType<typeof getTeacher>>>,
+  id: number,
+  pastaId: number | null
+): Promise<ActionResult> {
+  if (pastaId !== null) {
+    const { data: pasta } = await teacher.supabase
+      .from("pastas")
+      .select("id")
+      .eq("id", pastaId)
+      .is("deleted_at", null)
+      .maybeSingle()
+
+    if (!pasta) return fail("Pasta de destino inválida.")
+  }
+
+  const { data, error } = await teacher.supabase
+    .from("atividades")
+    .update({ pasta_id: pastaId })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
+
+  if (error || !data) return fail("Atividade não encontrada.")
+
+  revalidatePainel()
+  return ok("Atividade movida.")
+}
+
 export async function createPasta(
   _prev: ActionResult,
   formData: FormData
@@ -207,6 +291,17 @@ export async function createPasta(
   const parentId = idField(formData, "parent_id")
 
   if (!nome) return fail("Informe o nome da pasta.")
+
+  if (parentId !== null) {
+    const { data: parent } = await teacher.supabase
+      .from("pastas")
+      .select("id")
+      .eq("id", parentId)
+      .is("deleted_at", null)
+      .maybeSingle()
+
+    if (!parent) return fail("Pasta de destino inválida.")
+  }
 
   const { error } = await teacher.supabase.from("pastas").insert({
     nome,
@@ -220,7 +315,7 @@ export async function createPasta(
   return ok("Pasta criada.")
 }
 
-export async function updatePasta(
+export async function renamePasta(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
@@ -229,33 +324,40 @@ export async function updatePasta(
 
   const id = idField(formData, "id")
   const nome = field(formData, "nome")
-  const parentId = idField(formData, "parent_id")
 
   if (!id) return fail("Pasta inválida.")
   if (!nome) return fail("Informe o nome da pasta.")
 
-  if (parentId !== null) {
-    if (parentId === id)
-      return fail("Uma pasta não pode ficar dentro dela mesma.")
-
-    const descendants = await pastaDescendants(teacher.supabase, id)
-    if (descendants.has(parentId)) {
-      return fail("Uma pasta não pode ficar dentro de uma subpasta dela.")
-    }
-  }
-
-  const { error } = await teacher.supabase
+  const { data, error } = await teacher.supabase
     .from("pastas")
-    .update({ nome, parent_id: parentId })
+    .update({ nome })
     .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
 
-  if (error) return fail("Não foi possível atualizar a pasta.")
+  if (error || !data) return fail("Não foi possível renomear a pasta.")
 
   revalidatePainel()
-  return ok("Pasta atualizada.")
+  return ok("Pasta renomeada.")
 }
 
-export async function deletePasta(
+export async function movePasta(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const id = idField(formData, "id")
+  const parentId = idField(formData, "parent_id")
+
+  if (!id) return fail("Pasta inválida.")
+
+  return movePastaTo(teacher, id, parentId)
+}
+
+export async function trashPasta(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
@@ -265,12 +367,48 @@ export async function deletePasta(
   const id = idField(formData, "id")
   if (!id) return fail("Pasta inválida.")
 
-  const { error } = await teacher.supabase.from("pastas").delete().eq("id", id)
+  const { data, error } = await teacher.supabase.rpc("trash_pasta", {
+    p_pasta_id: id,
+  })
 
-  if (error) return fail("Não foi possível excluir a pasta.")
+  if (error || !data)
+    return fail("Não foi possível mover a pasta para a lixeira.")
 
   revalidatePainel()
-  return ok("Pasta excluída.")
+  return ok("Pasta movida para a lixeira.", data)
+}
+
+export async function duplicatePasta(pastaId: number): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  if (!Number.isInteger(pastaId) || pastaId <= 0) return fail("Pasta inválida.")
+
+  const { data, error } = await teacher.supabase.rpc("duplicate_pasta", {
+    p_pasta_id: pastaId,
+  })
+
+  if (error || !data) return fail("Não foi possível duplicar a pasta.")
+
+  revalidatePainel()
+  return ok("Pasta duplicada.")
+}
+
+export async function moveItem(
+  tipo: "pasta" | "atividade",
+  id: number,
+  pastaDestinoId: number | null
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  if (!Number.isInteger(id) || id <= 0) return fail("Item inválido.")
+
+  if (tipo === "pasta") {
+    return movePastaTo(teacher, id, pastaDestinoId)
+  }
+
+  return moveAtividadeTo(teacher, id, pastaDestinoId)
 }
 
 // ---------------------------------------------------------
@@ -294,6 +432,17 @@ export async function createAtividade(
     return fail("A senha precisa ter pelo menos 4 caracteres.")
   if (!aplicacoes || aplicacoes.length === 0) {
     return fail("Adicione pelo menos uma turma para a atividade.")
+  }
+
+  if (pastaId !== null) {
+    const { data: pasta } = await teacher.supabase
+      .from("pastas")
+      .select("id")
+      .eq("id", pastaId)
+      .is("deleted_at", null)
+      .maybeSingle()
+
+    if (!pasta) return fail("Pasta de destino inválida.")
   }
 
   const { data: atividade, error } = await teacher.supabase
@@ -372,19 +521,77 @@ export async function updateAtividade(
   const titulo = field(formData, "titulo")
   if (!titulo) return fail("Informe o título da atividade.")
 
-  const { error } = await teacher.supabase
+  const pastaId = idField(formData, "pasta_id")
+
+  if (pastaId !== null) {
+    const { data: pasta } = await teacher.supabase
+      .from("pastas")
+      .select("id")
+      .eq("id", pastaId)
+      .is("deleted_at", null)
+      .maybeSingle()
+
+    if (!pasta) return fail("Pasta de destino inválida.")
+  }
+
+  const { data, error } = await teacher.supabase
     .from("atividades")
     .update({
       titulo,
       subtitulo: optionalField(formData, "subtitulo"),
-      pasta_id: idField(formData, "pasta_id"),
+      pasta_id: pastaId,
     })
     .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
 
-  if (error) return fail("Não foi possível salvar a atividade.")
+  if (error || !data) return fail("Não foi possível salvar a atividade.")
 
   revalidatePainel(`/painel/atividades/${id}`)
   return ok("Atividade atualizada.")
+}
+
+export async function renameAtividade(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const id = idField(formData, "id")
+  const titulo = field(formData, "titulo")
+
+  if (!id) return fail("Atividade inválida.")
+  if (!titulo) return fail("Informe o título da atividade.")
+
+  const { data, error } = await teacher.supabase
+    .from("atividades")
+    .update({ titulo })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
+
+  if (error || !data) return fail("Não foi possível renomear a atividade.")
+
+  revalidatePainel(`/painel/atividades/${id}`)
+  return ok("Atividade renomeada.")
+}
+
+export async function moveAtividade(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const id = idField(formData, "id")
+  const pastaId = idField(formData, "pasta_id")
+
+  if (!id) return fail("Atividade inválida.")
+
+  return moveAtividadeTo(teacher, id, pastaId)
 }
 
 export async function updateActivityPassword(
@@ -447,12 +654,15 @@ export async function publishAtividade(
     return fail("Adicione pelo menos uma turma antes de publicar.")
   }
 
-  const { error } = await teacher.supabase
+  const { data, error } = await teacher.supabase
     .from("atividades")
     .update({ status: "publicada", publicada_em: new Date().toISOString() })
     .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
 
-  if (error) return fail("Não foi possível publicar a atividade.")
+  if (error || !data) return fail("Não foi possível publicar a atividade.")
 
   revalidatePainel(`/painel/atividades/${id}`)
   return ok("Atividade publicada.")
@@ -468,18 +678,37 @@ export async function unpublishAtividade(
   const id = idField(formData, "id")
   if (!id) return fail("Atividade inválida.")
 
-  const { error } = await teacher.supabase
+  const { data, error } = await teacher.supabase
     .from("atividades")
     .update({ status: "rascunho", publicada_em: null })
     .eq("id", id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle()
 
-  if (error) return fail("Não foi possível despublicar a atividade.")
+  if (error || !data) return fail("Não foi possível despublicar a atividade.")
 
   revalidatePainel(`/painel/atividades/${id}`)
   return ok("Atividade voltou para rascunho.")
 }
 
-export async function deleteAtividade(
+export async function setAtividadePublicada(
+  atividadeId: number,
+  publicada: boolean
+): Promise<ActionResult> {
+  if (!Number.isInteger(atividadeId) || atividadeId <= 0) {
+    return fail("Atividade inválida.")
+  }
+
+  const formData = new FormData()
+  formData.set("id", String(atividadeId))
+
+  return publicada
+    ? publishAtividade({ error: null }, formData)
+    : unpublishAtividade({ error: null }, formData)
+}
+
+export async function trashAtividade(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
@@ -489,15 +718,111 @@ export async function deleteAtividade(
   const id = idField(formData, "id")
   if (!id) return fail("Atividade inválida.")
 
-  const { error } = await teacher.supabase
-    .from("atividades")
-    .delete()
-    .eq("id", id)
+  const { data, error } = await teacher.supabase.rpc("trash_atividade", {
+    p_atividade_id: id,
+  })
 
-  if (error) return fail("Não foi possível excluir a atividade.")
+  if (error || !data) {
+    return fail("Não foi possível mover a atividade para a lixeira.")
+  }
+
+  revalidatePainel(`/painel/atividades/${id}`)
+  return ok("Atividade movida para a lixeira.", data)
+}
+
+export async function duplicateAtividade(
+  atividadeId: number
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  if (!Number.isInteger(atividadeId) || atividadeId <= 0) {
+    return fail("Atividade inválida.")
+  }
+
+  const { data, error } = await teacher.supabase.rpc("duplicate_atividade", {
+    p_atividade_id: atividadeId,
+  })
+
+  if (error || !data) return fail("Não foi possível duplicar a atividade.")
 
   revalidatePainel()
-  redirect("/painel")
+  return ok("Atividade duplicada.")
+}
+
+// ---------------------------------------------------------
+// Lixeira
+// ---------------------------------------------------------
+
+export async function restoreTrash(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const trashId = field(formData, "trash_id")
+  if (!trashId) return fail("Item da lixeira inválido.")
+
+  const { error } = await teacher.supabase.rpc("restore_trash", {
+    p_trash_id: trashId,
+  })
+
+  if (error) return fail("Não foi possível restaurar o item.")
+
+  revalidatePainel()
+  return ok("Item restaurado.")
+}
+
+export async function undoTrash(trashId: string): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  if (!trashId) return fail("Item da lixeira inválido.")
+
+  const { error } = await teacher.supabase.rpc("restore_trash", {
+    p_trash_id: trashId,
+  })
+
+  if (error) return fail("Não foi possível restaurar o item.")
+
+  revalidatePainel()
+  return ok("Item restaurado.")
+}
+
+export async function purgeTrash(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const trashId = field(formData, "trash_id")
+  if (!trashId) return fail("Item da lixeira inválido.")
+
+  const { error } = await teacher.supabase.rpc("purge_trash", {
+    p_trash_id: trashId,
+  })
+
+  if (error) return fail("Não foi possível excluir o item definitivamente.")
+
+  revalidatePainel()
+  return ok("Item excluído definitivamente.")
+}
+
+export async function emptyTrash(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const { error } = await teacher.supabase.rpc("empty_trash")
+
+  if (error) return fail("Não foi possível esvaziar a lixeira.")
+
+  revalidatePainel()
+  return ok("Lixeira esvaziada.")
 }
 
 // ---------------------------------------------------------

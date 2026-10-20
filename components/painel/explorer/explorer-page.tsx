@@ -1,0 +1,441 @@
+"use client"
+
+import * as React from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
+import Link from "next/link"
+import { FolderIcon, FolderPlusIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+import {
+  duplicateAtividade,
+  duplicatePasta,
+  moveItem,
+  setAtividadePublicada,
+  type ActionResult,
+} from "@/app/painel/actions"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  NewFolderDialog,
+  MoveDialog,
+  RenameDialog,
+  TrashConfirm,
+} from "@/components/painel/explorer/explorer-dialogs"
+import { ExplorerItemView } from "@/components/painel/explorer/explorer-item"
+import {
+  ExplorerToolbar,
+  targetKey,
+} from "@/components/painel/explorer/explorer-toolbar"
+import {
+  isPasta,
+  type ExplorerItem,
+} from "@/components/painel/explorer/explorer-types"
+import { toast } from "@/components/ui/toast"
+import type { ExplorerData } from "@/lib/painel/explorer-data"
+import { pastaDescendantIds } from "@/lib/pastas"
+import { cn } from "@/lib/utils"
+
+const DRAG_MIME = "application/x-painel-item"
+
+type DialogState =
+  | { kind: "nova-pasta"; parentId: number | null }
+  | { kind: "renomear"; item: ExplorerItem }
+  | { kind: "mover"; item: ExplorerItem }
+  | { kind: "lixeira"; item: ExplorerItem }
+  | null
+
+function normalizar(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+}
+
+export function ExplorerPage({ data }: { data: ExplorerData }) {
+  const router = useRouter()
+  const pastaAtualId = data.pastaAtual?.id ?? null
+  const [view, setView] = useState<"lista" | "grade">("lista")
+  const [query, setQuery] = useState("")
+  const [dialog, setDialog] = useState<DialogState>(null)
+  const [dragging, setDragging] = useState<ExplorerItem | null>(null)
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    const salvo = window.localStorage.getItem("painel:view")
+    if (salvo === "lista" || salvo === "grade") setView(salvo)
+  }, [])
+
+  const itens = useMemo<ExplorerItem[]>(
+    () => [
+      ...data.pastasAtuais.map((pasta) => ({
+        ...pasta,
+        tipo: "pasta" as const,
+      })),
+      ...data.atividadesAtuais.map((atividade) => ({
+        ...atividade,
+        tipo: "atividade" as const,
+      })),
+    ],
+    [data.pastasAtuais, data.atividadesAtuais]
+  )
+
+  const termo = normalizar(query.trim())
+  const visiveis = itens.filter((item) => {
+    if (!termo) return true
+    const nome = isPasta(item) ? item.nome : item.titulo
+    return normalizar(nome).includes(termo)
+  })
+
+  const descendentes = useMemo(
+    () =>
+      dragging?.tipo === "pasta"
+        ? pastaDescendantIds(data.pastas, dragging.id)
+        : new Set<number>(),
+    [dragging, data.pastas]
+  )
+
+  const newActivityHref =
+    pastaAtualId === null
+      ? "/painel/atividades/nova"
+      : `/painel/atividades/nova?pasta=${pastaAtualId}`
+
+  function executar(action: () => Promise<ActionResult>) {
+    startTransition(async () => {
+      const result = await action()
+
+      if (result.error) {
+        toast.add({ type: "error", title: result.error })
+        return
+      }
+
+      if (result.success) {
+        toast.add({ type: "success", title: result.success })
+      }
+
+      router.refresh()
+    })
+  }
+
+  function abrir(item: ExplorerItem) {
+    if (isPasta(item)) {
+      router.push(`/painel/pastas/${item.id}`)
+      return
+    }
+    router.push(`/painel/atividades/${item.id}`)
+  }
+
+  function duplicar(item: ExplorerItem) {
+    executar(() =>
+      isPasta(item) ? duplicatePasta(item.id) : duplicateAtividade(item.id)
+    )
+  }
+
+  function alternarPublicacao(item: ExplorerItem) {
+    if (isPasta(item)) return
+    executar(() => setAtividadePublicada(item.id, item.status !== "publicada"))
+  }
+
+  async function copiarCodigo(codigo: string) {
+    try {
+      await navigator.clipboard.writeText(codigo)
+      toast.add({ type: "success", title: `Código ${codigo} copiado.` })
+    } catch {
+      toast.add({
+        type: "error",
+        title: "Não foi possível copiar o código.",
+      })
+    }
+  }
+
+  function podeSoltar(destino: number | null) {
+    if (!dragging) return false
+    if (dragging.tipo === "atividade") return true
+
+    if (destino === dragging.id) return false
+    if (destino !== null && descendentes.has(destino)) return false
+
+    return true
+  }
+
+  function iniciarArraste(event: React.DragEvent, item: ExplorerItem) {
+    setDragging(item)
+    event.dataTransfer.setData(
+      DRAG_MIME,
+      JSON.stringify({ tipo: item.tipo, id: item.id })
+    )
+    event.dataTransfer.effectAllowed = "move"
+  }
+
+  function finalizarArraste() {
+    setDragging(null)
+    setDragOverKey(null)
+  }
+
+  function arrastarSobre(event: React.DragEvent, destino: number | null) {
+    if (!podeSoltar(destino)) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+    setDragOverKey(targetKey(destino))
+  }
+
+  function soltar(event: React.DragEvent, destino: number | null) {
+    event.preventDefault()
+    setDragOverKey(null)
+
+    const item = dragging
+    setDragging(null)
+
+    if (!item || !podeSoltar(destino)) return
+
+    const mesmoLugar =
+      (item.tipo === "pasta" && item.parent_id === destino) ||
+      (item.tipo === "atividade" && item.pasta_id === destino)
+
+    if (mesmoLugar) return
+
+    executar(() => moveItem(item.tipo, item.id, destino))
+  }
+
+  function arrastarSobreItem(event: React.DragEvent, item: ExplorerItem) {
+    if (!isPasta(item)) return
+    arrastarSobre(event, item.id)
+  }
+
+  function soltarEmItem(event: React.DragEvent, item: ExplorerItem) {
+    if (!isPasta(item)) return
+    soltar(event, item.id)
+  }
+
+  function alterarVisao(nova: "lista" | "grade") {
+    setView(nova)
+    window.localStorage.setItem("painel:view", nova)
+  }
+
+  const novoItem = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() =>
+          setDialog({ kind: "nova-pasta", parentId: pastaAtualId })
+        }
+      >
+        <FolderPlusIcon data-icon="inline-start" />
+        Nova pasta
+      </Button>
+      <Link
+        href={newActivityHref}
+        className={buttonVariants({ variant: "default" })}
+      >
+        <PlusIcon data-icon="inline-start" />
+        Nova atividade
+      </Link>
+    </div>
+  )
+
+  return (
+    <div
+      className={cn(
+        "flex w-full max-w-6xl flex-col gap-4",
+        isPending && "opacity-80"
+      )}
+      aria-busy={isPending}
+    >
+      <ExplorerToolbar
+        breadcrumb={data.breadcrumb}
+        query={query}
+        onQueryChange={setQuery}
+        view={view}
+        onViewChange={alterarVisao}
+        onNewFolder={() =>
+          setDialog({ kind: "nova-pasta", parentId: pastaAtualId })
+        }
+        newActivityHref={newActivityHref}
+        onDragOverTo={arrastarSobre}
+        onDropTo={soltar}
+        onDragLeave={() => setDragOverKey(null)}
+        dragOverKey={dragOverKey}
+      />
+
+      {visiveis.length === 0 ? (
+        <EmptyExplorer
+          buscando={termo.length > 0}
+          pastaAtualNome={data.pastaAtual?.nome ?? null}
+          onNewFolder={() =>
+            setDialog({ kind: "nova-pasta", parentId: pastaAtualId })
+          }
+          newActivityHref={newActivityHref}
+          extra={novoItem}
+        />
+      ) : (
+        <div
+          className={cn(
+            view === "lista"
+              ? "flex flex-col gap-2"
+              : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          )}
+        >
+          {visiveis.map((item) => (
+            <ExplorerItemView
+              key={`${item.tipo}-${item.id}`}
+              item={item}
+              view={view}
+              onOpen={() => abrir(item)}
+              onNewFolder={() =>
+                setDialog({
+                  kind: "nova-pasta",
+                  parentId: isPasta(item) ? item.id : pastaAtualId,
+                })
+              }
+              onNewActivity={() => {
+                if (isPasta(item)) {
+                  router.push(`/painel/atividades/nova?pasta=${item.id}`)
+                }
+              }}
+              onRename={() => setDialog({ kind: "renomear", item })}
+              onDuplicate={() => duplicar(item)}
+              onMove={() => setDialog({ kind: "mover", item })}
+              onTogglePublish={() => alternarPublicacao(item)}
+              onCopyCode={(codigo) => {
+                void copiarCodigo(codigo)
+              }}
+              onTrash={() => setDialog({ kind: "lixeira", item })}
+              onDragStart={iniciarArraste}
+              onDragEnd={finalizarArraste}
+              onDragOver={arrastarSobreItem}
+              onDragLeave={() => setDragOverKey(null)}
+              onDrop={soltarEmItem}
+              dropActive={isPasta(item) && dragOverKey === targetKey(item.id)}
+              disabledDrop={isPasta(item) && !!dragging && !podeSoltar(item.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        {visiveis.length} item(ns)
+        {termo ? ` para “${query.trim()}”` : ""}
+      </p>
+
+      {dialog?.kind === "nova-pasta" && (
+        <NewFolderDialog
+          open
+          parentId={dialog.parentId}
+          onOpenChange={(open) => {
+            if (!open) setDialog(null)
+          }}
+        />
+      )}
+
+      {dialog?.kind === "renomear" && (
+        <RenameDialog
+          open
+          item={dialog.item}
+          onOpenChange={(open) => {
+            if (!open) setDialog(null)
+          }}
+        />
+      )}
+
+      {dialog?.kind === "mover" && (
+        <MoveDialog
+          open
+          item={dialog.item}
+          pastas={data.pastas}
+          onOpenChange={(open) => {
+            if (!open) setDialog(null)
+          }}
+        />
+      )}
+
+      {dialog?.kind === "lixeira" && (
+        <TrashConfirm
+          open
+          tipo={dialog.item.tipo}
+          id={dialog.item.id}
+          nome={isPasta(dialog.item) ? dialog.item.nome : dialog.item.titulo}
+          onOpenChange={(open) => {
+            if (!open) setDialog(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function EmptyExplorer({
+  buscando,
+  pastaAtualNome,
+  onNewFolder,
+  newActivityHref,
+  extra,
+}: {
+  buscando: boolean
+  pastaAtualNome: string | null
+  onNewFolder: () => void
+  newActivityHref: string
+  extra: React.ReactNode
+}) {
+  if (buscando) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <SearchIcon className="size-5 text-muted-foreground" />
+            Nenhum resultado
+          </CardTitle>
+          <CardDescription>
+            Não encontramos pastas ou atividades com esse nome.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger className="block">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FolderIcon className="size-5 text-muted-foreground" />
+              {pastaAtualNome
+                ? `A pasta “${pastaAtualNome}” está vazia`
+                : "Seu explorador está vazio"}
+            </CardTitle>
+            <CardDescription>
+              Crie uma pasta para organizar ou comece uma nova atividade.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>{extra}</CardContent>
+        </Card>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-56">
+        <ContextMenuGroup>
+          <ContextMenuItem onClick={onNewFolder}>
+            <FolderPlusIcon />
+            Nova pasta
+          </ContextMenuItem>
+          <ContextMenuItem render={<Link href={newActivityHref} />}>
+            <PlusIcon />
+            Nova atividade
+          </ContextMenuItem>
+        </ContextMenuGroup>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}

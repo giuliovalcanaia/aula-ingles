@@ -13,13 +13,68 @@ export type PastaNode = {
 export function flattenPastas(
   pastas: PastaRow[],
   parentId: number | null = null,
-  depth = 0
+  depth = 0,
+  visitados = new Set<number>()
 ): PastaNode[] {
   return pastas
     .filter((pasta) => pasta.parent_id === parentId)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-    .flatMap((pasta) => [
-      { id: pasta.id, nome: pasta.nome, depth },
-      ...flattenPastas(pastas, pasta.id, depth + 1),
-    ])
+    .flatMap((pasta) => {
+      if (visitados.has(pasta.id)) return []
+      visitados.add(pasta.id)
+      return [
+        { id: pasta.id, nome: pasta.nome, depth },
+        ...flattenPastas(pastas, pasta.id, depth + 1, visitados),
+      ]
+    })
+}
+
+/** Caminho da raiz até a pasta informada. */
+export function pastaBreadcrumb(
+  pastas: PastaRow[],
+  pastaId: number | null
+): PastaRow[] {
+  if (pastaId === null) return []
+
+  const byId = new Map(pastas.map((pasta) => [pasta.id, pasta]))
+  const caminho: PastaRow[] = []
+  const visitados = new Set<number>()
+  let atual = byId.get(pastaId)
+
+  while (atual && !visitados.has(atual.id)) {
+    caminho.unshift(atual)
+    visitados.add(atual.id)
+    atual = atual.parent_id === null ? undefined : byId.get(atual.parent_id)
+  }
+
+  return caminho
+}
+
+/** Inclui a própria pasta e todas as subpastas. */
+export function pastaDescendantIds(
+  pastas: PastaRow[],
+  pastaId: number
+): Set<number> {
+  const children = new Map<number, number[]>()
+
+  for (const pasta of pastas) {
+    if (pasta.parent_id === null) continue
+    const lista = children.get(pasta.parent_id) ?? []
+    lista.push(pasta.id)
+    children.set(pasta.parent_id, lista)
+  }
+
+  const resultado = new Set<number>([pastaId])
+  const fila = [pastaId]
+
+  while (fila.length > 0) {
+    const atual = fila.shift()!
+    for (const filho of children.get(atual) ?? []) {
+      if (resultado.has(filho)) continue
+      resultado.add(filho)
+      fila.push(filho)
+    }
+  }
+
+  return resultado
 }
