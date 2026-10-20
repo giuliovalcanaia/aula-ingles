@@ -310,6 +310,7 @@ export type Database = {
         Args: { p_link_id: number; p_status: string }
         Returns: undefined
       }
+      validate_activity_code: { Args: { p_codigo: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
