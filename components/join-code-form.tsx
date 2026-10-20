@@ -31,10 +31,12 @@ export function JoinCodeForm() {
       <Field orientation="horizontal">
         <Input
           type="text"
-          name="codigo"
+          name="codigoAula"
           placeholder="Digite aqui"
           autoFocus
-          autoComplete="off"
+          autoComplete="one-time-code"
+          spellCheck={false}
+          autoCapitalize="characters"
           value={codigo}
           onChange={(event) => setCodigo(event.target.value)}
           className="uppercase placeholder:normal-case"
