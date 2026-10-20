@@ -46,6 +46,8 @@ import {
 import { toast } from "@/components/ui/toast"
 import type { ExplorerData } from "@/lib/painel/explorer-data"
 import { pastaDescendantIds } from "@/lib/pastas"
+import { itemKey } from "@/lib/selecao"
+import { useSelecao } from "@/components/painel/selecao-context"
 import { cn } from "@/lib/utils"
 
 const DRAG_MIME = "application/x-painel-item"
@@ -67,6 +69,7 @@ function normalizar(value: string) {
 export function ExplorerPage({ data }: { data: ExplorerData }) {
   const router = useRouter()
   const pastaAtualId = data.pastaAtual?.id ?? null
+  const { selecionados, selecionar, definir, limpar } = useSelecao()
   const [view, setView] = useState<"lista" | "grade">("lista")
   const [query, setQuery] = useState("")
   const [dialog, setDialog] = useState<DialogState>(null)
@@ -99,6 +102,39 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
     const nome = isPasta(item) ? item.nome : item.titulo
     return normalizar(nome).includes(termo)
   })
+
+  const chavesVisiveis = visiveis.map(itemKey)
+
+  useEffect(() => {
+    limpar()
+  }, [pastaAtualId, limpar])
+
+  useEffect(() => {
+    limpar()
+  }, [query, limpar])
+
+  useEffect(() => {
+    function aoTeclar(event: KeyboardEvent) {
+      const alvo = event.target as HTMLElement | null
+
+      if (alvo?.closest("input, textarea, select, [contenteditable='true']")) {
+        return
+      }
+
+      if (event.key === "Escape") {
+        limpar()
+        return
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+        event.preventDefault()
+        definir(chavesVisiveis)
+      }
+    }
+
+    window.addEventListener("keydown", aoTeclar)
+    return () => window.removeEventListener("keydown", aoTeclar)
+  }, [chavesVisiveis, definir, limpar])
 
   const descendentes = useMemo(
     () =>
@@ -136,6 +172,17 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
       return
     }
     router.push(`/painel/atividades/${item.id}`)
+  }
+
+  function selecionarItem(
+    item: ExplorerItem,
+    mods?: { ctrl?: boolean; shift?: boolean }
+  ) {
+    selecionar(itemKey(item), {
+      ctrl: mods?.ctrl,
+      shift: mods?.shift,
+      ordem: chavesVisiveis,
+    })
   }
 
   function duplicar(item: ExplorerItem) {
@@ -283,6 +330,12 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
         />
       ) : (
         <div
+          role="listbox"
+          aria-label="Conteúdo da pasta"
+          aria-multiselectable="true"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) limpar()
+          }}
           className={cn(
             view === "lista"
               ? "flex flex-col gap-2"
@@ -294,6 +347,8 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
               key={`${item.tipo}-${item.id}`}
               item={item}
               view={view}
+              selected={selecionados.has(itemKey(item))}
+              onSelect={(mods) => selecionarItem(item, mods)}
               onOpen={() => abrir(item)}
               onNewFolder={() =>
                 setDialog({
@@ -327,7 +382,9 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
       )}
 
       <p className="text-xs text-muted-foreground">
-        {visiveis.length} item(ns)
+        {selecionados.size > 0
+          ? `${selecionados.size} de ${visiveis.length} selecionado(s)`
+          : `${visiveis.length} item(ns)`}
         {termo ? ` para “${query.trim()}”` : ""}
       </p>
 

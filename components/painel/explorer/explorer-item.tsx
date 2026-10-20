@@ -55,6 +55,8 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 type ExplorerItemProps = {
   item: ExplorerItem
   view: "lista" | "grade"
+  selected: boolean
+  onSelect: (mods?: { ctrl?: boolean; shift?: boolean }) => void
   onOpen: () => void
   onNewFolder: () => void
   onNewActivity: () => void
@@ -76,6 +78,8 @@ type ExplorerItemProps = {
 export function ExplorerItemView({
   item,
   view,
+  selected,
+  onSelect,
   onOpen,
   onNewFolder,
   onNewActivity,
@@ -191,13 +195,20 @@ export function ExplorerItemView({
     }
   )
 
-  function handleOpen(event: React.MouseEvent | React.KeyboardEvent) {
-    if (
-      event.type === "click" &&
-      (event.target as HTMLElement).closest("[data-ignore-open]")
-    ) {
-      return
-    }
+  function ignorarClique(event: React.MouseEvent) {
+    return Boolean((event.target as HTMLElement).closest("[data-ignore-open]"))
+  }
+
+  function handleClick(event: React.MouseEvent) {
+    if (ignorarClique(event)) return
+    onSelect({
+      ctrl: event.metaKey || event.ctrlKey,
+      shift: event.shiftKey,
+    })
+  }
+
+  function handleDoubleClick(event: React.MouseEvent) {
+    if (ignorarClique(event)) return
     onOpen()
   }
 
@@ -218,20 +229,35 @@ export function ExplorerItemView({
     <ContextMenu>
       <ContextMenuTrigger
         className={cn(
-          "group relative rounded-xl border bg-card text-card-foreground transition-colors outline-none",
-          "hover:border-foreground/20 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring",
+          "group relative rounded-xl border bg-card text-card-foreground outline-none select-none",
+          "transition-[background-color,border-color,box-shadow] duration-200 ease-out",
+          "focus-visible:ring-2 focus-visible:ring-ring",
           view === "lista"
             ? "flex items-center gap-3 px-3 py-2.5"
             : "flex min-h-32 flex-col gap-3 p-4",
+          !selected &&
+            "hover:border-foreground/25 hover:bg-accent/40 hover:ring-2 hover:ring-foreground/15 hover:ring-inset",
+          selected &&
+            "border-primary/60 bg-accent text-accent-foreground hover:ring-2 hover:ring-primary/40 hover:ring-inset",
           dropActive && "border-primary ring-2 ring-primary/40",
           disabledDrop && "opacity-60"
         )}
-        role="button"
+        role="option"
+        aria-selected={selected}
+        data-selected={selected}
         tabIndex={0}
-        aria-label={`Abrir ${nome}`}
+        aria-label={nome}
         title={nome}
         draggable
-        onClick={handleOpen}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onContextMenu={(event) => {
+          if (selected || ignorarClique(event)) return
+          onSelect({
+            ctrl: event.metaKey || event.ctrlKey,
+            shift: event.shiftKey,
+          })
+        }}
         onKeyDown={(event) => {
           if ((event.target as HTMLElement).closest("[data-ignore-open]")) {
             return
@@ -249,9 +275,15 @@ export function ExplorerItemView({
             return
           }
 
-          if (event.key === "Enter" || event.key === " ") {
+          if (event.key === "Enter") {
             event.preventDefault()
-            handleOpen(event)
+            onOpen()
+            return
+          }
+
+          if (event.key === " ") {
+            event.preventDefault()
+            onSelect({ ctrl: true })
           }
         }}
         onDragStart={(event) => onDragStart(event, item)}

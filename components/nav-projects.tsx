@@ -1,9 +1,17 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { FolderIcon, Trash2Icon } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { ExternalLinkIcon, FolderIcon, Trash2Icon } from "lucide-react"
 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import { useSelecao } from "@/components/painel/selecao-context"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -13,6 +21,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { flattenPastas, type PastaRow } from "@/lib/pastas"
+import { itemKey } from "@/lib/selecao"
+import { cn } from "@/lib/utils"
 
 export function NavProjects({
   items,
@@ -28,7 +38,12 @@ export function NavProjects({
   trashCount: number
 }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { selecionados, selecionar } = useSelecao()
   const arvore = flattenPastas(pastas)
+  const chavesPastas = arvore.map((pasta) =>
+    itemKey({ tipo: "pasta", id: pasta.id })
+  )
 
   return (
     <>
@@ -63,17 +78,70 @@ export function NavProjects({
           <SidebarMenu>
             {arvore.map((pasta) => {
               const url = `/painel/pastas/${pasta.id}`
+              const chave = itemKey({ tipo: "pasta", id: pasta.id })
+              const selecionada = selecionados.has(chave)
+
+              function selecionarPasta(mods?: {
+                ctrl?: boolean
+                shift?: boolean
+              }) {
+                selecionar(chave, {
+                  ctrl: mods?.ctrl,
+                  shift: mods?.shift,
+                  ordem: chavesPastas,
+                })
+              }
+
               return (
                 <SidebarMenuItem key={pasta.id}>
-                  <SidebarMenuButton
-                    isActive={pathname === url}
-                    tooltip={pasta.nome}
-                    render={<Link href={url} />}
-                    style={{ paddingLeft: `${8 + pasta.depth * 14}px` }}
-                  >
-                    <FolderIcon />
-                    <span className="truncate">{pasta.nome}</span>
-                  </SidebarMenuButton>
+                  <ContextMenu>
+                    <ContextMenuTrigger className="block">
+                      <SidebarMenuButton
+                        type="button"
+                        isActive={pathname === url && !selecionada}
+                        tooltip={pasta.nome}
+                        data-selected={selecionada}
+                        aria-pressed={selecionada}
+                        className={cn(
+                          selecionada &&
+                            "bg-accent text-accent-foreground ring-1 ring-primary/30 ring-inset hover:bg-accent hover:text-accent-foreground"
+                        )}
+                        style={{
+                          paddingLeft: `${8 + pasta.depth * 14}px`,
+                        }}
+                        onClick={(event) =>
+                          selecionarPasta({
+                            ctrl: event.metaKey || event.ctrlKey,
+                            shift: event.shiftKey,
+                          })
+                        }
+                        onDoubleClick={() => router.push(url)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault()
+                            router.push(url)
+                            return
+                          }
+
+                          if (event.key === " ") {
+                            event.preventDefault()
+                            selecionarPasta({ ctrl: true })
+                          }
+                        }}
+                      >
+                        <FolderIcon />
+                        <span className="truncate">{pasta.nome}</span>
+                      </SidebarMenuButton>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      <ContextMenuGroup>
+                        <ContextMenuItem onClick={() => router.push(url)}>
+                          <ExternalLinkIcon />
+                          Abrir
+                        </ContextMenuItem>
+                      </ContextMenuGroup>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 </SidebarMenuItem>
               )
             })}
