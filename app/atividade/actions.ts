@@ -24,3 +24,24 @@ export async function markLinkAsStarted(linkId: number) {
   revalidatePath("/atividade")
   return { error: null }
 }
+
+export async function completeLink(linkId: number, senha: string) {
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getClaims()
+
+  if (!data?.claims) {
+    return { error: "not_authenticated" as const }
+  }
+
+  const { error } = await supabase.rpc("complete_link", {
+    p_link_id: linkId,
+    p_senha: senha,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath("/atividade")
+  return { error: null }
+}

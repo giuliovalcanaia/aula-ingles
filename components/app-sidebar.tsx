@@ -2,7 +2,6 @@
 
 import * as React from "react"
 
-import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
@@ -13,7 +12,13 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, List, MapIcon, Plus } from "lucide-react"
+import {
+  FolderIcon,
+  GalleryVerticalEndIcon,
+  LayoutListIcon,
+  MapIcon,
+  Plus,
+} from "lucide-react"
 
 type Professor = {
   id: number
@@ -36,23 +41,26 @@ export function AppSidebar({
     },
   ]
 
-  const navMain: React.ComponentProps<typeof NavMain>["items"] = []
-
   const projects = [
     {
-      name: "Histórico",
-      url: "#",
-      icon: <List />,
+      name: "Atividades",
+      url: "/painel",
+      icon: <LayoutListIcon />,
     },
     {
-      name: "Criar nova atividade",
-      url: "#",
+      name: "Nova atividade",
+      url: "/painel/atividades/nova",
       icon: <Plus />,
     },
     {
       name: "Turmas",
-      url: "#",
+      url: "/painel/turmas",
       icon: <MapIcon />,
+    },
+    {
+      name: "Pastas",
+      url: "/painel/pastas",
+      icon: <FolderIcon />,
     },
   ]
 
@@ -62,8 +70,7 @@ export function AppSidebar({
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
-        <NavProjects projects={projects} />
+        <NavProjects items={projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

@@ -11,6 +11,8 @@ import { createClient } from "@/lib/supabase/client"
 const errorMessages: Record<string, string> = {
   invalid_activity_code:
     "Código da atividade inválido. Confira com o professor.",
+  activity_not_published:
+    "Esta atividade ainda não está disponível. Confira com o professor.",
   student_already_in_another_class:
     "Você já entrou em uma atividade de outra turma.",
   teacher_cannot_join_as_student:

@@ -2,6 +2,7 @@
 
 import { markLinkAsStarted } from "@/app/atividade/actions"
 import { ClickableCard, type ActivityStatus } from "@/components/clickable-card"
+import { ConcludeLinkDialog } from "@/components/conclude-link-dialog"
 
 export type StudentLink = {
   id: number
@@ -20,6 +21,11 @@ export function StudentLinkList({ links }: { links: StudentLink[] }) {
           href={link.href}
           title={link.titulo}
           status={link.status}
+          footer={
+            link.status === "fazendo" ? (
+              <ConcludeLinkDialog linkId={link.id} titulo={link.titulo} />
+            ) : undefined
+          }
           onBeforeNavigate={
             link.status === "aberta" || link.status === "fazendo"
               ? async () => {

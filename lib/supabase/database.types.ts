@@ -14,13 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      atividade_senhas: {
+        Row: {
+          atividade_id: number
+          created_at: string
+          senha_hash: string
+          updated_at: string
+        }
+        Insert: {
+          atividade_id: number
+          created_at?: string
+          senha_hash: string
+          updated_at?: string
+        }
+        Update: {
+          atividade_id?: number
+          created_at?: string
+          senha_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atividade_senhas_atividade_id_fkey"
+            columns: ["atividade_id"]
+            isOneToOne: true
+            referencedRelation: "atividades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividades: {
         Row: {
           codigo_atividade: string
           created_at: string
+          data_realizacao: string | null
           id: number
           pasta_id: number | null
           professor_id: number
+          publicada_em: string | null
+          status: string
           subtitulo: string | null
           titulo: string
           turma_id: number
@@ -29,9 +61,12 @@ export type Database = {
         Insert: {
           codigo_atividade: string
           created_at?: string
+          data_realizacao?: string | null
           id?: number
           pasta_id?: number | null
           professor_id: number
+          publicada_em?: string | null
+          status?: string
           subtitulo?: string | null
           titulo: string
           turma_id: number
@@ -40,9 +75,12 @@ export type Database = {
         Update: {
           codigo_atividade?: string
           created_at?: string
+          data_realizacao?: string | null
           id?: number
           pasta_id?: number | null
           professor_id?: number
+          publicada_em?: string | null
+          status?: string
           subtitulo?: string | null
           titulo?: string
           turma_id?: number
@@ -72,12 +110,46 @@ export type Database = {
           },
         ]
       }
+      estudante_atividade: {
+        Row: {
+          atividade_id: number
+          concluido_em: string | null
+          estudante_id: number
+          iniciado_em: string
+        }
+        Insert: {
+          atividade_id: number
+          concluido_em?: string | null
+          estudante_id: number
+          iniciado_em?: string
+        }
+        Update: {
+          atividade_id?: number
+          concluido_em?: string | null
+          estudante_id?: number
+          iniciado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estudante_atividade_atividade_id_fkey"
+            columns: ["atividade_id"]
+            isOneToOne: false
+            referencedRelation: "atividades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estudante_atividade_estudante_id_fkey"
+            columns: ["estudante_id"]
+            isOneToOne: false
+            referencedRelation: "estudantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estudantes: {
         Row: {
           codigo_aluno: string
           created_at: string
-          horario_inicio_atividade: string | null
-          horario_termino_atividade: string | null
           id: number
           nome: string
           turma_id: number
@@ -87,8 +159,6 @@ export type Database = {
         Insert: {
           codigo_aluno: string
           created_at?: string
-          horario_inicio_atividade?: string | null
-          horario_termino_atividade?: string | null
           id?: number
           nome: string
           turma_id: number
@@ -98,8 +168,6 @@ export type Database = {
         Update: {
           codigo_aluno?: string
           created_at?: string
-          horario_inicio_atividade?: string | null
-          horario_termino_atividade?: string | null
           id?: number
           nome?: string
           turma_id?: number
@@ -265,7 +333,6 @@ export type Database = {
       turmas: {
         Row: {
           created_at: string
-          data_realizacao_atividade: string | null
           id: number
           nome: string
           professor_id: number
@@ -273,7 +340,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          data_realizacao_atividade?: string | null
           id?: number
           nome: string
           professor_id: number
@@ -281,7 +347,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          data_realizacao_atividade?: string | null
           id?: number
           nome?: string
           professor_id?: number
@@ -302,9 +367,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_link: {
+        Args: { p_link_id: number; p_senha: string }
+        Returns: Json
+      }
       join_activity: {
         Args: { p_codigo: string; p_nome: string }
         Returns: Json
+      }
+      move_link: {
+        Args: { p_direcao: number; p_link_id: number }
+        Returns: undefined
+      }
+      set_activity_password: {
+        Args: { p_atividade_id: number; p_senha: string }
+        Returns: undefined
       }
       update_my_progress: {
         Args: { p_link_id: number; p_status: string }

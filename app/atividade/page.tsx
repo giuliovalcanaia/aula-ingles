@@ -52,7 +52,7 @@ export default async function Page({
 
   const { data: atividade } = await supabase
     .from("atividades")
-    .select("id, titulo, subtitulo")
+    .select("id, titulo, subtitulo, status, data_realizacao")
     .eq("codigo_atividade", codigoAtividade)
     .maybeSingle()
 
@@ -68,6 +68,22 @@ export default async function Page({
                 tente novamente
               </a>
               .
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  if (atividade.status !== "publicada") {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col p-4">
+        <Card>
+          <CardHeader>
+            <p className="font-medium">Atividade indisponível.</p>
+            <CardDescription>
+              O professor fechou esta atividade. Fale com ele para mais
+              informações.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -112,6 +128,14 @@ export default async function Page({
         {atividade.subtitulo && (
           <p className="text-muted-foreground sm:text-base">
             {atividade.subtitulo}
+          </p>
+        )}
+        {atividade.data_realizacao && (
+          <p className="text-sm text-muted-foreground">
+            Data da aula:{" "}
+            {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
+              new Date(`${atividade.data_realizacao}T12:00:00`)
+            )}
           </p>
         )}
         <Card className="mt-4">

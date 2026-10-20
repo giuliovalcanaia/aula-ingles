@@ -17,6 +17,7 @@ interface ClickableCardProps {
   title: string
   status?: ActivityStatus
   children?: React.ReactNode
+  footer?: React.ReactNode
   onBeforeNavigate?: () => Promise<void> | void
 }
 
@@ -67,6 +68,7 @@ export function ClickableCard({
   title,
   status = "aberta",
   children,
+  footer,
   onBeforeNavigate,
 }: ClickableCardProps) {
   const currentStatus = statusStyles[status]
@@ -114,6 +116,8 @@ export function ClickableCard({
       </CardHeader>
 
       {children && <CardContent>{children}</CardContent>}
+
+      {footer && <CardContent className="relative z-20">{footer}</CardContent>}
     </Card>
   )
 }
