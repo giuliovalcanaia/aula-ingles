@@ -2,15 +2,8 @@ import Link from "next/link"
 import { ArrowLeftIcon } from "lucide-react"
 
 import { createAtividade } from "@/app/painel/actions"
-import { ActivityForm } from "@/components/painel/activity-form"
+import { NovaAtividadeForm } from "@/components/painel/nova-atividade-form"
 import { buttonVariants } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function Page({
@@ -60,31 +53,19 @@ export default async function Page({
           Nova atividade
         </h1>
         <p className="text-sm text-muted-foreground">
-          A atividade nasce como rascunho. Depois de adicionar os links, você
-          publica para os alunos poderem entrar com o código de cada turma.
+          A atividade nasce como rascunho. Preencha as informações, adicione os
+          links e, quando estiver pronta, publique para os alunos entrarem com o
+          código de cada turma.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Dados da atividade</CardTitle>
-          <CardDescription>
-            Defina o título e a senha, e indique as turmas que vão realizar a
-            atividade.{" "}
-            {pastaDestino
-              ? `Ela será criada na pasta “${pastaDestino.nome}”.`
-              : "Ela será criada na raiz do painel."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ActivityForm
-            action={createAtividade}
-            turmasExistentes={(turmas ?? []).map((turma) => turma.nome)}
-            pastaId={pastaDestino?.id ?? null}
-            cancelHref={voltarHref}
-          />
-        </CardContent>
-      </Card>
+      <NovaAtividadeForm
+        action={createAtividade}
+        turmasExistentes={(turmas ?? []).map((turma) => turma.nome)}
+        pastaId={pastaDestino?.id ?? null}
+        pastaNome={pastaDestino?.nome ?? null}
+        cancelHref={voltarHref}
+      />
     </div>
   )
 }

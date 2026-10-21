@@ -21,6 +21,12 @@ type AplicacaoInput = {
   data: string | null
 }
 
+type LinkInput = {
+  titulo: string
+  href: string
+  descricao: string | null
+}
+
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 const STATUSES = ["aberta", "fazendo", "concluida", "bloqueada"] as const
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -82,6 +88,42 @@ function parseAplicacoes(raw: string): AplicacaoInput[] | null {
     }
 
     return aplicacoes
+  } catch {
+    return null
+  }
+}
+
+function parseLinks(raw: string): LinkInput[] | null {
+  if (!raw) return []
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+
+    const links: LinkInput[] = []
+
+    for (const item of parsed) {
+      if (typeof item !== "object" || item === null) return null
+
+      const { titulo, href, descricao } = item as {
+        titulo?: unknown
+        href?: unknown
+        descricao?: unknown
+      }
+
+      const tituloLimpo = String(titulo ?? "").trim()
+      const hrefLimpo = String(href ?? "").trim()
+
+      if (!tituloLimpo || !isHttpUrl(hrefLimpo)) return null
+
+      links.push({
+        titulo: tituloLimpo,
+        href: hrefLimpo,
+        descricao: String(descricao ?? "").trim() || null,
+      })
+    }
+
+    return links
   } catch {
     return null
   }
@@ -471,6 +513,7 @@ export async function createAtividade(
   const pastaId = idField(formData, "pasta_id")
   const senha = field(formData, "senha")
   const aplicacoes = parseAplicacoes(field(formData, "aplicacoes"))
+  const links = parseLinks(field(formData, "links"))
 
   if (!titulo) return fail("Informe o título da atividade.")
   if (senha.length < 4)
@@ -478,6 +521,7 @@ export async function createAtividade(
   if (!aplicacoes || aplicacoes.length === 0) {
     return fail("Adicione pelo menos uma turma para a atividade.")
   }
+  if (!links) return fail("Revise os links informados e tente novamente.")
 
   if (pastaId !== null) {
     const { data: pasta } = await teacher.supabase
@@ -513,6 +557,23 @@ export async function createAtividade(
   if (senhaError) {
     await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
     return fail("Não foi possível definir a senha da atividade.")
+  }
+
+  if (links.length > 0) {
+    const { error: linksError } = await teacher.supabase.from("links").insert(
+      links.map((link, index) => ({
+        atividade_id: atividade.id,
+        titulo: link.titulo,
+        descricao: link.descricao,
+        href: link.href,
+        ordem: index + 1,
+      }))
+    )
+
+    if (linksError) {
+      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+      return fail("Não foi possível adicionar os links.")
+    }
   }
 
   for (const aplicacao of aplicacoes) {
