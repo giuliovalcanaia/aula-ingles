@@ -12,10 +12,12 @@ import {
   renamePasta,
   trashAtividade,
   trashPasta,
+  trashSelecionados,
   undoTrash,
   createPasta,
   type ActionResult,
 } from "@/app/painel/actions"
+import { useSelecao } from "@/components/painel/selecao-context"
 import { ActionForm } from "@/components/painel/action-form"
 import { SubmitButton } from "@/components/painel/submit-button"
 import {
@@ -254,6 +256,7 @@ export function TrashConfirm({
   redirectTo?: string
 }) {
   const router = useRouter()
+  const { limpar } = useSelecao()
   const action = tipo === "pasta" ? trashPasta : trashAtividade
   const [state, formAction] = React.useActionState(action, { error: null })
   const handled = useRef<ActionResult | null>(null)
@@ -269,6 +272,7 @@ export function TrashConfirm({
 
     if (!state.success) return
 
+    limpar()
     toast.add({
       type: "info",
       title: state.success,
@@ -300,7 +304,7 @@ export function TrashConfirm({
     } else {
       router.refresh()
     }
-  }, [state, onOpenChange, redirectTo, router])
+  }, [state, onOpenChange, redirectTo, router, limpar])
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -319,6 +323,90 @@ export function TrashConfirm({
         <AlertDialogFooter>
           <form action={formAction} className="contents">
             <input type="hidden" name="id" value={id} />
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <SubmitButton variant="destructive" pendingLabel="Movendo...">
+              <Trash2Icon data-icon="inline-start" />
+              Mover para a lixeira
+            </SubmitButton>
+          </form>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+export function TrashSelecionadosConfirm({
+  open,
+  onOpenChange,
+  chaves,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  chaves: string[]
+}) {
+  const router = useRouter()
+  const { limpar } = useSelecao()
+  const [state, formAction] = React.useActionState(trashSelecionados, {
+    error: null,
+  })
+  const handled = useRef<ActionResult | null>(null)
+  const total = chaves.length
+
+  useEffect(() => {
+    if (state === handled.current) return
+    handled.current = state
+
+    if (state.error) {
+      toast.add({ type: "error", title: state.error })
+      return
+    }
+
+    if (!state.success) return
+
+    limpar()
+    toast.add({
+      type: "info",
+      title: state.success,
+      actionProps: state.trashId
+        ? {
+            children: "Desfazer",
+            onClick: () => {
+              void (async () => {
+                const result = await undoTrash(state.trashId!)
+                if (result.error) {
+                  toast.add({ type: "error", title: result.error })
+                  return
+                }
+                toast.add({
+                  type: "success",
+                  title: result.success ?? "Itens restaurados.",
+                })
+                router.refresh()
+              })()
+            },
+          }
+        : undefined,
+    })
+
+    onOpenChange(false)
+    router.refresh()
+  }, [state, onOpenChange, router, limpar])
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Mover {total} {total === 1 ? "item" : "itens"} para a lixeira?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            As subpastas e as atividades dentro dos itens selecionados também
+            vão para a lixeira. Você pode restaurar tudo depois.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <form action={formAction} className="contents">
+            <input type="hidden" name="itens" value={JSON.stringify(chaves)} />
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <SubmitButton variant="destructive" pendingLabel="Movendo...">
               <Trash2Icon data-icon="inline-start" />

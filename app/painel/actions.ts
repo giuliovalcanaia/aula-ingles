@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
+import { separarChaves } from "@/lib/selecao"
 
 export type ActionResult = {
   error: string | null
@@ -83,6 +84,19 @@ function parseAplicacoes(raw: string): AplicacaoInput[] | null {
     return aplicacoes
   } catch {
     return null
+  }
+}
+
+function parseChaves(raw: string): string[] {
+  if (!raw) return []
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter((item): item is string => typeof item === "string")
+  } catch {
+    return []
   }
 }
 
@@ -376,6 +390,37 @@ export async function trashPasta(
 
   revalidatePainel()
   return ok("Pasta movida para a lixeira.", data)
+}
+
+export async function trashSelecionados(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
+  const { pastas, atividades } = separarChaves(
+    parseChaves(field(formData, "itens"))
+  )
+  const total = pastas.length + atividades.length
+
+  if (total === 0) return fail("Nenhum item selecionado.")
+
+  const { data, error } = await teacher.supabase.rpc("trash_items", {
+    p_pastas: pastas,
+    p_atividades: atividades,
+  })
+
+  if (error || !data)
+    return fail("Não foi possível mover os itens para a lixeira.")
+
+  revalidatePainel()
+  return ok(
+    total === 1
+      ? "Item movido para a lixeira."
+      : `${total} itens movidos para a lixeira.`,
+    data
+  )
 }
 
 export async function duplicatePasta(pastaId: number): Promise<ActionResult> {

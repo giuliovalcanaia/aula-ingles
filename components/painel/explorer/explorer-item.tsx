@@ -245,6 +245,7 @@ export function ExplorerItemView({
         role="option"
         aria-selected={selected}
         data-selected={selected}
+        data-selecionavel
         tabIndex={0}
         aria-label={nome}
         title={nome}

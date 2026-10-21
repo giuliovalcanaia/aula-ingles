@@ -50,6 +50,38 @@ export function pastaBreadcrumb(
   return caminho
 }
 
+/** Como `flattenPastas`, mas só desce nas pastas expandidas. */
+export function flattenPastasVisiveis(
+  pastas: PastaRow[],
+  expandidas: ReadonlySet<number>,
+  parentId: number | null = null,
+  depth = 0,
+  visitados = new Set<number>()
+): PastaNode[] {
+  return pastas
+    .filter((pasta) => pasta.parent_id === parentId)
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+    .flatMap((pasta) => {
+      if (visitados.has(pasta.id)) return []
+      visitados.add(pasta.id)
+
+      const no: PastaNode = { id: pasta.id, nome: pasta.nome, depth }
+
+      if (!expandidas.has(pasta.id)) return [no]
+
+      return [
+        no,
+        ...flattenPastasVisiveis(
+          pastas,
+          expandidas,
+          pasta.id,
+          depth + 1,
+          visitados
+        ),
+      ]
+    })
+}
+
 /** Inclui a própria pasta e todas as subpastas. */
 export function pastaDescendantIds(
   pastas: PastaRow[],

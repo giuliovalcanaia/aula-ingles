@@ -443,6 +443,10 @@ export type Database = {
         Args: { p_atividade_id: number }
         Returns: string
       }
+      trash_items: {
+        Args: { p_atividades?: number[]; p_pastas?: number[] }
+        Returns: string
+      }
       trash_pasta: {
         Args: { p_pasta_id: number }
         Returns: string

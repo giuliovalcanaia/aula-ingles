@@ -33,6 +33,7 @@ import {
   MoveDialog,
   RenameDialog,
   TrashConfirm,
+  TrashSelecionadosConfirm,
 } from "@/components/painel/explorer/explorer-dialogs"
 import { ExplorerItemView } from "@/components/painel/explorer/explorer-item"
 import {
@@ -57,6 +58,7 @@ type DialogState =
   | { kind: "renomear"; item: ExplorerItem }
   | { kind: "mover"; item: ExplorerItem }
   | { kind: "lixeira"; item: ExplorerItem }
+  | { kind: "lixeira-selecao" }
   | null
 
 function normalizar(value: string) {
@@ -104,6 +106,9 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
   })
 
   const chavesVisiveis = visiveis.map(itemKey)
+  const selecionadosVisiveis = chavesVisiveis.filter((key) =>
+    selecionados.has(key)
+  ).length
 
   useEffect(() => {
     limpar()
@@ -126,6 +131,13 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
         return
       }
 
+      if (event.key === "Delete") {
+        if (selecionados.size === 0) return
+        event.preventDefault()
+        setDialog({ kind: "lixeira-selecao" })
+        return
+      }
+
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
         event.preventDefault()
         definir(chavesVisiveis)
@@ -134,7 +146,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
 
     window.addEventListener("keydown", aoTeclar)
     return () => window.removeEventListener("keydown", aoTeclar)
-  }, [chavesVisiveis, definir, limpar])
+  }, [chavesVisiveis, definir, limpar, selecionados.size])
 
   const descendentes = useMemo(
     () =>
@@ -183,6 +195,15 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
       shift: mods?.shift,
       ordem: chavesVisiveis,
     })
+  }
+
+  function excluir(item: ExplorerItem) {
+    if (selecionados.size > 0) {
+      setDialog({ kind: "lixeira-selecao" })
+      return
+    }
+
+    setDialog({ kind: "lixeira", item })
   }
 
   function duplicar(item: ExplorerItem) {
@@ -333,9 +354,6 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
           role="listbox"
           aria-label="Conteúdo da pasta"
           aria-multiselectable="true"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) limpar()
-          }}
           className={cn(
             view === "lista"
               ? "flex flex-col gap-2"
@@ -368,7 +386,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
               onCopyCode={(codigo) => {
                 void copiarCodigo(codigo)
               }}
-              onTrash={() => setDialog({ kind: "lixeira", item })}
+              onTrash={() => excluir(item)}
               onDragStart={iniciarArraste}
               onDragEnd={finalizarArraste}
               onDragOver={arrastarSobreItem}
@@ -382,8 +400,8 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
       )}
 
       <p className="text-xs text-muted-foreground">
-        {selecionados.size > 0
-          ? `${selecionados.size} de ${visiveis.length} selecionado(s)`
+        {selecionadosVisiveis > 0
+          ? `${selecionadosVisiveis} de ${visiveis.length} selecionado(s)`
           : `${visiveis.length} item(ns)`}
         {termo ? ` para “${query.trim()}”` : ""}
       </p>
@@ -425,6 +443,16 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
           tipo={dialog.item.tipo}
           id={dialog.item.id}
           nome={isPasta(dialog.item) ? dialog.item.nome : dialog.item.titulo}
+          onOpenChange={(open) => {
+            if (!open) setDialog(null)
+          }}
+        />
+      )}
+
+      {dialog?.kind === "lixeira-selecao" && (
+        <TrashSelecionadosConfirm
+          open
+          chaves={[...selecionados]}
           onOpenChange={(open) => {
             if (!open) setDialog(null)
           }}

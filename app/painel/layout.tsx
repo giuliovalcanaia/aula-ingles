@@ -61,7 +61,7 @@ export default async function PainelLayout({
     typeof data.claims.email === "string" ? data.claims.email : undefined
 
   return (
-    <SelecaoProvider>
+    <SelecaoProvider pastas={pastas ?? []}>
       <SidebarProvider>
         <AppSidebar
           professor={professor}

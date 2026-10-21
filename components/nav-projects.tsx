@@ -2,16 +2,9 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ExternalLinkIcon, FolderIcon, Trash2Icon } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { ChevronRightIcon, FolderIcon, Trash2Icon } from "lucide-react"
 
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuGroup,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-import { useSelecao } from "@/components/painel/selecao-context"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -20,8 +13,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { flattenPastas, type PastaRow } from "@/lib/pastas"
-import { itemKey } from "@/lib/selecao"
+import {
+  flattenPastasVisiveis,
+  pastaBreadcrumb,
+  type PastaRow,
+} from "@/lib/pastas"
 import { cn } from "@/lib/utils"
 
 export function NavProjects({
@@ -39,11 +35,46 @@ export function NavProjects({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { selecionados, selecionar } = useSelecao()
-  const arvore = flattenPastas(pastas)
-  const chavesPastas = arvore.map((pasta) =>
-    itemKey({ tipo: "pasta", id: pasta.id })
+  const [expandidas, setExpandidas] = useState<Set<number>>(new Set())
+
+  const pastaAtualId = useMemo(() => {
+    const match = pathname.match(/^\/painel\/pastas\/(\d+)/)
+    return match ? Number(match[1]) : null
+  }, [pathname])
+
+  // Mantém visível o caminho até a pasta atual (inclusive ela).
+  useEffect(() => {
+    if (pastaAtualId === null) return
+
+    const caminho = pastaBreadcrumb(pastas, pastaAtualId)
+
+    setExpandidas((anterior) => {
+      const proximo = new Set(anterior)
+      for (const pasta of caminho) proximo.add(pasta.id)
+      return proximo
+    })
+  }, [pastaAtualId, pastas])
+
+  const arvore = flattenPastasVisiveis(pastas, expandidas)
+
+  const comFilhos = useMemo(
+    () =>
+      new Set(
+        pastas.flatMap((pasta) =>
+          pasta.parent_id === null ? [] : [pasta.parent_id]
+        )
+      ),
+    [pastas]
   )
+
+  function alternarPasta(id: number) {
+    setExpandidas((anterior) => {
+      const proximo = new Set(anterior)
+      if (proximo.has(id)) proximo.delete(id)
+      else proximo.add(id)
+      return proximo
+    })
+  }
 
   return (
     <>
@@ -78,70 +109,52 @@ export function NavProjects({
           <SidebarMenu>
             {arvore.map((pasta) => {
               const url = `/painel/pastas/${pasta.id}`
-              const chave = itemKey({ tipo: "pasta", id: pasta.id })
-              const selecionada = selecionados.has(chave)
-
-              function selecionarPasta(mods?: {
-                ctrl?: boolean
-                shift?: boolean
-              }) {
-                selecionar(chave, {
-                  ctrl: mods?.ctrl,
-                  shift: mods?.shift,
-                  ordem: chavesPastas,
-                })
-              }
+              const temFilhos = comFilhos.has(pasta.id)
+              const aberta = expandidas.has(pasta.id)
 
               return (
                 <SidebarMenuItem key={pasta.id}>
-                  <ContextMenu>
-                    <ContextMenuTrigger className="block">
-                      <SidebarMenuButton
-                        type="button"
-                        isActive={pathname === url && !selecionada}
-                        tooltip={pasta.nome}
-                        data-selected={selecionada}
-                        aria-pressed={selecionada}
-                        className={cn(
-                          selecionada &&
-                            "bg-accent text-accent-foreground ring-1 ring-primary/30 ring-inset hover:bg-accent hover:text-accent-foreground"
-                        )}
-                        style={{
-                          paddingLeft: `${8 + pasta.depth * 14}px`,
-                        }}
-                        onClick={(event) =>
-                          selecionarPasta({
-                            ctrl: event.metaKey || event.ctrlKey,
-                            shift: event.shiftKey,
-                          })
-                        }
-                        onDoubleClick={() => router.push(url)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.preventDefault()
-                            router.push(url)
-                            return
-                          }
+                  <SidebarMenuButton
+                    type="button"
+                    isActive={pathname === url}
+                    tooltip={pasta.nome}
+                    aria-expanded={temFilhos ? aberta : undefined}
+                    style={{
+                      paddingLeft: `${8 + pasta.depth * 14}px`,
+                    }}
+                    onClick={(event) => {
+                      if (event.detail === 1 && temFilhos) {
+                        alternarPasta(pasta.id)
+                      }
 
-                          if (event.key === " ") {
-                            event.preventDefault()
-                            selecionarPasta({ ctrl: true })
-                          }
-                        }}
-                      >
-                        <FolderIcon />
-                        <span className="truncate">{pasta.nome}</span>
-                      </SidebarMenuButton>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-48">
-                      <ContextMenuGroup>
-                        <ContextMenuItem onClick={() => router.push(url)}>
-                          <ExternalLinkIcon />
-                          Abrir
-                        </ContextMenuItem>
-                      </ContextMenuGroup>
-                    </ContextMenuContent>
-                  </ContextMenu>
+                      router.push(url)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowRight" && temFilhos && !aberta) {
+                        event.preventDefault()
+                        alternarPasta(pasta.id)
+                        return
+                      }
+
+                      if (event.key === "ArrowLeft" && temFilhos && aberta) {
+                        event.preventDefault()
+                        alternarPasta(pasta.id)
+                      }
+                    }}
+                  >
+                    {temFilhos ? (
+                      <ChevronRightIcon
+                        className={cn(
+                          "shrink-0 transition-transform",
+                          aberta && "rotate-90"
+                        )}
+                      />
+                    ) : (
+                      <span className="size-4 shrink-0" aria-hidden="true" />
+                    )}
+                    <FolderIcon />
+                    <span className="truncate">{pasta.nome}</span>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               )
             })}
