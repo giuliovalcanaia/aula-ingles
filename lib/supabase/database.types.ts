@@ -435,6 +435,10 @@ export type Database = {
         Args: { p_trash_id: string }
         Returns: undefined
       }
+      session_started_at: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       set_activity_password: {
         Args: { p_atividade_id: number; p_senha: string }
         Returns: undefined

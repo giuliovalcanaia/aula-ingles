@@ -5,8 +5,10 @@ import { randomInt } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-import { createClient } from "@/lib/supabase/server"
+import { normalizeHttpUrl } from "@/lib/links"
+import { lookupLinkTitle } from "@/lib/link-title"
 import { separarChaves } from "@/lib/selecao"
+import { createClient } from "@/lib/supabase/server"
 
 export type ActionResult = {
   error: string | null
@@ -59,15 +61,6 @@ function ok(success: string, trashId?: string): ActionResult {
   return { error: null, success, trashId }
 }
 
-function isHttpUrl(value: string) {
-  try {
-    const url = new URL(value)
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
-  }
-}
-
 function parseLinks(raw: string): LinkInput[] | null {
   if (!raw) return []
 
@@ -87,9 +80,9 @@ function parseLinks(raw: string): LinkInput[] | null {
       }
 
       const tituloLimpo = String(titulo ?? "").trim()
-      const hrefLimpo = String(href ?? "").trim()
+      const hrefLimpo = normalizeHttpUrl(String(href ?? "").trim())
 
-      if (!tituloLimpo || !isHttpUrl(hrefLimpo)) return null
+      if (!tituloLimpo || !hrefLimpo) return null
 
       links.push({
         titulo: tituloLimpo,
@@ -504,6 +497,7 @@ export async function createAtividade(
     )
 
     if (linksError) {
+      console.error("createAtividade:links", linksError)
       await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
       return fail("Não foi possível adicionar os links.")
     }
@@ -878,6 +872,14 @@ export async function setAplicacaoStatus(
 // Links
 // ---------------------------------------------------------
 
+/** Lê o título da página do link para preencher o campo automaticamente. */
+export async function fetchLinkTitle(rawHref: string) {
+  const teacher = await getTeacher()
+  if (!teacher) return { title: null, error: "unauthorized" as const }
+
+  return lookupLinkTitle(rawHref)
+}
+
 export async function createLink(
   _prev: ActionResult,
   formData: FormData
@@ -887,12 +889,14 @@ export async function createLink(
 
   const atividadeId = idField(formData, "atividade_id")
   const titulo = field(formData, "titulo")
-  const href = field(formData, "href")
+  const href = normalizeHttpUrl(field(formData, "href"))
 
   if (!atividadeId) return fail("Atividade inválida.")
   if (!titulo) return fail("Informe o título do link.")
-  if (!isHttpUrl(href))
-    return fail("Informe uma URL que comece com http:// ou https://.")
+  if (!href)
+    return fail(
+      "Informe um endereço válido, como google.com ou https://google.com."
+    )
 
   const { data: ultimo } = await teacher.supabase
     .from("links")
@@ -910,7 +914,10 @@ export async function createLink(
     ordem: (ultimo?.ordem ?? 0) + 1,
   })
 
-  if (error) return fail("Não foi possível adicionar o link.")
+  if (error) {
+    console.error("createLink", error)
+    return fail("Não foi possível adicionar o link.")
+  }
 
   revalidatePainel(`/painel/atividades/${atividadeId}`)
   return ok("Link adicionado.")
@@ -926,12 +933,14 @@ export async function updateLink(
   const id = idField(formData, "id")
   const atividadeId = idField(formData, "atividade_id")
   const titulo = field(formData, "titulo")
-  const href = field(formData, "href")
+  const href = normalizeHttpUrl(field(formData, "href"))
 
   if (!id || !atividadeId) return fail("Link inválido.")
   if (!titulo) return fail("Informe o título do link.")
-  if (!isHttpUrl(href))
-    return fail("Informe uma URL que comece com http:// ou https://.")
+  if (!href)
+    return fail(
+      "Informe um endereço válido, como google.com ou https://google.com."
+    )
 
   const { error } = await teacher.supabase
     .from("links")
@@ -942,7 +951,10 @@ export async function updateLink(
     })
     .eq("id", id)
 
-  if (error) return fail("Não foi possível salvar o link.")
+  if (error) {
+    console.error("updateLink", error)
+    return fail("Não foi possível salvar o link.")
+  }
 
   revalidatePainel(`/painel/atividades/${atividadeId}`)
   return ok("Link atualizado.")

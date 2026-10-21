@@ -8,8 +8,14 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCampos } from "@/components/painel/atividade-campos"
+import { BuscarTituloButton } from "@/components/painel/buscar-titulo-button"
 import { SenhaField } from "@/components/painel/senha-field"
 import { SubmitButton } from "@/components/painel/submit-button"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -32,6 +38,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { normalizeHttpUrl } from "@/lib/links"
 
 type LinkNovo = {
   titulo: string
@@ -40,15 +47,6 @@ type LinkNovo = {
 }
 
 const LINK_VAZIO: LinkNovo = { titulo: "", href: "", descricao: "" }
-
-function isHttpUrl(value: string) {
-  try {
-    const url = new URL(value)
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
-  }
-}
 
 type NovaAtividadeFormProps = {
   action: (state: ActionResult, formData: FormData) => Promise<ActionResult>
@@ -67,18 +65,20 @@ export function NovaAtividadeForm({
   const [links, setLinks] = useState<LinkNovo[]>([])
   const [link, setLink] = useState<LinkNovo>(LINK_VAZIO)
   const [erroHref, setErroHref] = useState<string | null>(null)
+  const [erroTitulo, setErroTitulo] = useState<string | null>(null)
 
   function addLink() {
     const titulo = link.titulo.trim()
-    const hrefInformada = link.href.trim()
-    if (!titulo || !hrefInformada) return
+    const href = normalizeHttpUrl(link.href)
+    if (!titulo) {
+      setErroTitulo("Informe o título do link.")
+      return
+    }
 
-    const href = /^https?:\/\//i.test(hrefInformada)
-      ? hrefInformada
-      : `https://${hrefInformada}`
-
-    if (!isHttpUrl(href)) {
-      setErroHref("Informe uma URL que comece com http:// ou https://.")
+    if (!href) {
+      setErroHref(
+        "Informe um endereço válido, como google.com ou https://google.com."
+      )
       return
     }
 
@@ -88,6 +88,7 @@ export function NovaAtividadeForm({
     ])
     setLink(LINK_VAZIO)
     setErroHref(null)
+    setErroTitulo(null)
   }
 
   function removeLink(index: number) {
@@ -198,42 +199,57 @@ export function NovaAtividadeForm({
               <FieldSet>
                 <FieldLegend variant="label">Adicionar link</FieldLegend>
                 <FieldGroup>
-                  <Field>
+                  <Field data-invalid={Boolean(erroTitulo)}>
                     <FieldLabel htmlFor="link-titulo">
                       Título do link
                     </FieldLabel>
                     <Input
                       id="link-titulo"
                       value={link.titulo}
-                      onChange={(event) =>
+                      onChange={(event) => {
                         setLink({ ...link, titulo: event.target.value })
-                      }
+                        setErroTitulo(null)
+                      }}
                       onKeyDown={adicionarLinkComEnter}
                       placeholder="Ex.: Exercise 1"
                       autoComplete="off"
+                      aria-invalid={Boolean(erroTitulo)}
                     />
+                    {erroTitulo && <FieldError>{erroTitulo}</FieldError>}
                   </Field>
 
                   <Field data-invalid={Boolean(erroHref)}>
                     <FieldLabel htmlFor="link-href">URL</FieldLabel>
-                    <Input
-                      id="link-href"
-                      value={link.href}
-                      onChange={(event) => {
-                        setLink({ ...link, href: event.target.value })
-                        setErroHref(null)
-                      }}
-                      onKeyDown={adicionarLinkComEnter}
-                      placeholder="https://..."
-                      inputMode="url"
-                      autoComplete="off"
-                      aria-invalid={Boolean(erroHref)}
-                    />
+                    <InputGroup>
+                      <InputGroupInput
+                        id="link-href"
+                        value={link.href}
+                        onChange={(event) => {
+                          setLink({ ...link, href: event.target.value })
+                          setErroHref(null)
+                        }}
+                        onKeyDown={adicionarLinkComEnter}
+                        placeholder="google.com ou https://..."
+                        inputMode="url"
+                        autoComplete="off"
+                        aria-invalid={Boolean(erroHref)}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <BuscarTituloButton
+                          href={link.href}
+                          onTitulo={(titulo) => {
+                            setLink((atual) => ({ ...atual, titulo }))
+                            setErroTitulo(null)
+                          }}
+                          onErro={setErroHref}
+                        />
+                      </InputGroupAddon>
+                    </InputGroup>
                     {erroHref ? (
                       <FieldError>{erroHref}</FieldError>
                     ) : (
                       <FieldDescription>
-                        Endereço completo do exercício.
+                        Pode digitar sem https:// ou usar “Buscar título”.
                       </FieldDescription>
                     )}
                   </Field>
@@ -255,12 +271,7 @@ export function NovaAtividadeForm({
                 </FieldGroup>
 
                 <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addLink}
-                    disabled={!link.titulo.trim() || !link.href.trim()}
-                  >
+                  <Button type="button" variant="outline" onClick={addLink}>
                     <PlusIcon data-icon="inline-start" />
                     Adicionar link
                   </Button>

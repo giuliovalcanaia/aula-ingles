@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -74,17 +75,21 @@ export function ClickableCard({
   const currentStatus = statusStyles[status]
   const StatusIcon = currentStatus.icon
   const [navigating, setNavigating] = useState(false)
+  const router = useRouter()
 
-  async function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  // O link abre em outra aba (o navegador cuida disso pelo `target="_blank"`
+  // do <a>, então não há bloqueio de pop-up). O progresso é marcado em seguida
+  // e, ao voltar para esta aba, o cartão já aparece como "Em execução".
+  async function handleClick() {
     if (!onBeforeNavigate) return
 
-    event.preventDefault()
     setNavigating(true)
 
     try {
       await onBeforeNavigate()
+      router.refresh()
     } finally {
-      window.location.assign(href)
+      setNavigating(false)
     }
   }
 
@@ -94,6 +99,8 @@ export function ClickableCard({
     >
       <a
         href={currentStatus.disabled ? undefined : href}
+        target={currentStatus.disabled ? undefined : "_blank"}
+        rel="noopener noreferrer"
         tabIndex={currentStatus.disabled ? -1 : 0}
         aria-disabled={currentStatus.disabled}
         aria-busy={navigating}

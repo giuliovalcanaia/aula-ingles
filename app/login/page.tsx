@@ -4,7 +4,14 @@ import { redirect } from "next/navigation"
 import { LoginForm } from "@/components/login-form"
 import { createClient } from "@/lib/supabase/server"
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ expirado?: string }>
+}) {
+  const { expirado } = await searchParams
+  const sessaoExpirada = expirado === "1"
+
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
   const userId = data?.claims?.sub
@@ -16,7 +23,9 @@ export default async function LoginPage() {
       .eq("user_id", userId)
       .maybeSingle()
 
-    if (professor) redirect("/painel")
+    // Evita loop de redirect caso o cookie de sessão ainda não tenha sido
+    // removido quando a sessão expira.
+    if (professor && !sessaoExpirada) redirect("/painel")
   }
 
   return (
@@ -32,7 +41,7 @@ export default async function LoginPage() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <LoginForm />
+            <LoginForm expirado={sessaoExpirada} />
           </div>
         </div>
       </div>

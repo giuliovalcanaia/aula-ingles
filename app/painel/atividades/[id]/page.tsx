@@ -22,6 +22,7 @@ import {
 import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
 import { ConfirmAction } from "@/components/painel/confirm-action"
+import { LinkTituloCampos } from "@/components/painel/link-titulo-campos"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { Badge } from "@/components/ui/badge"
@@ -502,25 +503,12 @@ export default async function Page({
                       name="atividade_id"
                       value={atividade.id}
                     />
-                    <div className="space-y-2">
-                      <Label htmlFor={`titulo-${link.id}`}>Título</Label>
-                      <Input
-                        id={`titulo-${link.id}`}
-                        name="titulo"
-                        defaultValue={link.titulo}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`href-${link.id}`}>URL</Label>
-                      <Input
-                        id={`href-${link.id}`}
-                        name="href"
-                        type="url"
-                        defaultValue={link.href}
-                        required
-                      />
-                    </div>
+                    <LinkTituloCampos
+                      tituloId={`titulo-${link.id}`}
+                      hrefId={`href-${link.id}`}
+                      tituloInicial={link.titulo}
+                      hrefInicial={link.href}
+                    />
                     <SubmitButton variant="outline">Salvar</SubmitButton>
                     <div className="space-y-2 sm:col-span-3">
                       <Label htmlFor={`descricao-${link.id}`}>
@@ -544,28 +532,14 @@ export default async function Page({
               <CardTitle>Adicionar link</CardTitle>
             </CardHeader>
             <CardContent>
-              <ActionForm action={createLink} className="space-y-3">
+              <ActionForm
+                action={createLink}
+                resetOnSuccess
+                className="space-y-3"
+              >
                 <input type="hidden" name="atividade_id" value={atividade.id} />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="novo-titulo">Título</Label>
-                    <Input
-                      id="novo-titulo"
-                      name="titulo"
-                      placeholder="Ex.: Exercise 1"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="novo-href">URL</Label>
-                    <Input
-                      id="novo-href"
-                      name="href"
-                      type="url"
-                      placeholder="https://..."
-                      required
-                    />
-                  </div>
+                  <LinkTituloCampos tituloId="novo-titulo" hrefId="novo-href" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nova-descricao">Descrição (opcional)</Label>

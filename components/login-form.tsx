@@ -16,8 +16,9 @@ import { cn } from "@/lib/utils"
 
 export function LoginForm({
   className,
+  expirado = false,
   ...props
-}: React.ComponentProps<"form">) {
+}: React.ComponentProps<"form"> & { expirado?: boolean }) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -98,6 +99,14 @@ export function LoginForm({
             Digite o seu e-mail e senha para acessar o painel
           </p>
         </div>
+        {expirado && !error && (
+          <p
+            className="text-center text-sm text-muted-foreground"
+            role="status"
+          >
+            Sua sessão expirou. Entre novamente.
+          </p>
+        )}
         <Field>
           <FieldLabel htmlFor="email">E-mail</FieldLabel>
           <Input
