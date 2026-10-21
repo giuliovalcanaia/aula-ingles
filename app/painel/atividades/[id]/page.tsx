@@ -25,6 +25,7 @@ import {
 import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
 import { ConfirmAction } from "@/components/painel/confirm-action"
+import { DateField } from "@/components/painel/date-picker"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +43,6 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/server"
-import { flattenPastas } from "@/lib/pastas"
 
 const statusLabels: Record<string, string> = {
   rascunho: "Rascunho",
@@ -268,10 +268,10 @@ export default async function Page({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nova-turma-data">Data (opcional)</Label>
-                    <Input
+                    <DateField
                       id="nova-turma-data"
                       name="data"
-                      type="date"
+                      placeholder="Data"
                       className="w-40"
                     />
                   </div>
@@ -361,11 +361,11 @@ export default async function Page({
                         <Label htmlFor={`data-${aplicacao.id}`}>
                           Data da aula
                         </Label>
-                        <Input
+                        <DateField
                           id={`data-${aplicacao.id}`}
                           name="data"
-                          type="date"
-                          defaultValue={aplicacao.data ?? ""}
+                          defaultValue={aplicacao.data}
+                          placeholder="Data"
                           className="w-40"
                         />
                       </div>
@@ -679,11 +679,7 @@ export default async function Page({
               <CardTitle>Dados da atividade</CardTitle>
             </CardHeader>
             <CardContent>
-              <ActivityForm
-                action={updateAtividade}
-                pastas={flattenPastas(pastas ?? [])}
-                atividade={atividade}
-              />
+              <ActivityForm action={updateAtividade} atividade={atividade} />
             </CardContent>
           </Card>
 

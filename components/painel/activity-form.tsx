@@ -1,22 +1,25 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { PlusIcon, Trash2Icon } from "lucide-react"
 
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
+import { DatePicker } from "@/components/painel/date-picker"
 import { SubmitButton } from "@/components/painel/submit-button"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
-
-export type PastaOption = {
-  id: number
-  nome: string
-  depth: number
-}
 
 export type AtividadeFormData = {
   id: number
@@ -32,24 +35,25 @@ type TurmaAplicacao = {
 
 type ActivityFormProps = {
   action: (state: ActionResult, formData: FormData) => Promise<ActionResult>
-  pastas: PastaOption[]
   turmasExistentes?: string[]
   atividade?: AtividadeFormData
-  pastaPadrao?: number | null
+  /** Pasta de destino; a atividade é criada no diretório aberto no painel. */
+  pastaId?: number | null
+  cancelHref?: string
 }
 
 export function ActivityForm({
   action,
-  pastas,
   turmasExistentes = [],
   atividade,
-  pastaPadrao = null,
+  pastaId,
+  cancelHref,
 }: ActivityFormProps) {
   const editando = Boolean(atividade)
   const [aplicacoes, setAplicacoes] = useState<TurmaAplicacao[]>([])
   const [turma, setTurma] = useState("")
   const [data, setData] = useState("")
-  const pastaSelecionada = atividade?.pasta_id ?? pastaPadrao ?? null
+  const destinoId = atividade?.pasta_id ?? pastaId ?? null
 
   function addTurma() {
     const nome = turma.trim()
@@ -77,96 +81,95 @@ export function ActivityForm({
     )
   }
 
+  // Enter no campo de turma não deve enviar o formulário: ele adiciona a
+  // turma à lista.
+  function adicionarComEnter(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return
+    event.preventDefault()
+    addTurma()
+  }
+
   return (
-    <ActionForm action={action} className="grid gap-4 sm:grid-cols-2">
+    <ActionForm action={action} className="flex flex-col gap-6">
       {atividade && <input type="hidden" name="id" value={atividade.id} />}
-
-      <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="titulo">Título</Label>
-        <Input
-          id="titulo"
-          name="titulo"
-          placeholder="Ex.: Can / Can't"
-          defaultValue={atividade?.titulo}
-          required
-        />
-      </div>
-
-      <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="subtitulo">Subtítulo (opcional)</Label>
-        <Textarea
-          id="subtitulo"
-          name="subtitulo"
-          placeholder="Ex.: Exercícios de can / can't"
-          defaultValue={atividade?.subtitulo ?? ""}
-          rows={2}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="pasta_id">Pasta (opcional)</Label>
-        <NativeSelect
-          id="pasta_id"
-          name="pasta_id"
-          defaultValue={pastaSelecionada?.toString() ?? ""}
-          className="w-full"
-        >
-          <NativeSelectOption value="">Sem pasta</NativeSelectOption>
-          {pastas.map((pasta) => (
-            <NativeSelectOption key={pasta.id} value={pasta.id}>
-              {"— ".repeat(pasta.depth)}
-              {pasta.nome}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </div>
-
+      <input type="hidden" name="pasta_id" value={destinoId ?? ""} />
       {!editando && (
-        <div className="space-y-2">
-          <Label htmlFor="senha">Senha para liberar a próxima atividade</Label>
-          <Input
-            id="senha"
-            name="senha"
-            type="password"
-            placeholder="Mínimo de 4 caracteres"
-            autoComplete="new-password"
-            minLength={4}
-            required
-          />
-        </div>
+        <input
+          type="hidden"
+          name="aplicacoes"
+          value={JSON.stringify(
+            aplicacoes.map((item) => ({
+              turma: item.turma,
+              data: item.data || null,
+            }))
+          )}
+        />
       )}
 
-      {!editando && (
-        <div className="space-y-3 sm:col-span-2">
-          <div>
-            <p className="text-sm font-medium">
-              Turmas que vão realizar a atividade
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Escolha uma turma existente ou digite uma nova. Cada turma recebe
-              um código de entrada próprio.
-            </p>
-          </div>
-
-          <input
-            type="hidden"
-            name="aplicacoes"
-            value={JSON.stringify(
-              aplicacoes.map((item) => ({
-                turma: item.turma,
-                data: item.data || null,
-              }))
-            )}
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="titulo">Título</FieldLabel>
+          <Input
+            id="titulo"
+            name="titulo"
+            placeholder="Ex.: Can / Can't"
+            defaultValue={atividade?.titulo}
+            autoFocus={!editando}
+            required
           />
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="subtitulo">Subtítulo</FieldLabel>
+          <Textarea
+            id="subtitulo"
+            name="subtitulo"
+            placeholder="Ex.: Exercícios de can / can't"
+            defaultValue={atividade?.subtitulo ?? ""}
+            rows={2}
+          />
+          <FieldDescription>
+            Opcional. Aparece para o aluno logo acima dos links.
+          </FieldDescription>
+        </Field>
+
+        {!editando && (
+          <Field>
+            <FieldLabel htmlFor="senha">Senha de liberação</FieldLabel>
+            <Input
+              id="senha"
+              name="senha"
+              type="password"
+              minLength={4}
+              placeholder="Mínimo de 4 caracteres"
+              autoComplete="new-password"
+              required
+            />
+            <FieldDescription>
+              O aluno digita esta senha para concluir cada link. Ela vale para
+              todas as turmas desta atividade.
+            </FieldDescription>
+          </Field>
+        )}
+      </FieldGroup>
+
+      {!editando && (
+        <FieldSet>
+          <FieldLegend>Turmas</FieldLegend>
+          <FieldDescription>
+            Cada turma recebe um código de entrada e uma lista de nomes própria.
+            Escolha uma turma existente ou digite uma nova.
+          </FieldDescription>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="turma-nova">Turma</Label>
+            <Field className="flex-1">
+              <FieldLabel htmlFor="turma-nova">Turma</FieldLabel>
               <Input
                 id="turma-nova"
                 list="turmas-existentes"
                 value={turma}
                 onChange={(event) => setTurma(event.target.value)}
+                onKeyDown={adicionarComEnter}
                 placeholder="Ex.: 1º ano A"
                 autoComplete="off"
               />
@@ -175,35 +178,41 @@ export function ActivityForm({
                   <option key={nome} value={nome} />
                 ))}
               </datalist>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="turma-data">Data (opcional)</Label>
-              <Input
+            </Field>
+            <Field className="sm:w-40">
+              <FieldLabel htmlFor="turma-data">Data</FieldLabel>
+              <DatePicker
                 id="turma-data"
-                type="date"
                 value={data}
-                onChange={(event) => setData(event.target.value)}
+                onChange={setData}
+                placeholder="Data"
               />
-            </div>
-            <Button type="button" variant="outline" onClick={addTurma}>
-              <PlusIcon />
+            </Field>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addTurma}
+              disabled={!turma.trim()}
+            >
+              <PlusIcon data-icon="inline-start" />
               Adicionar
             </Button>
           </div>
 
-          {aplicacoes.length > 0 && (
-            <ul className="space-y-2">
+          {aplicacoes.length > 0 ? (
+            <FieldGroup className="gap-2">
               {aplicacoes.map((item, index) => (
-                <li
+                <Field
                   key={`${item.turma}-${index}`}
-                  className="flex flex-wrap items-end gap-2 rounded-lg border p-2"
+                  orientation="horizontal"
+                  className="rounded-lg border p-2"
                 >
-                  <div className="flex-1 text-sm font-medium">{item.turma}</div>
-                  <Input
-                    type="date"
+                  <FieldTitle className="flex-1">{item.turma}</FieldTitle>
+                  <DatePicker
                     value={item.data}
-                    onChange={(event) => updateData(index, event.target.value)}
+                    onChange={(value) => updateData(index, value)}
                     aria-label={`Data da turma ${item.turma}`}
+                    placeholder="Data"
                     className="w-40"
                   />
                   <Button
@@ -215,15 +224,28 @@ export function ActivityForm({
                   >
                     <Trash2Icon />
                   </Button>
-                </li>
+                </Field>
               ))}
-            </ul>
+            </FieldGroup>
+          ) : (
+            <FieldDescription>
+              Nenhuma turma adicionada ainda. A atividade precisa de pelo menos
+              uma para ser publicada.
+            </FieldDescription>
           )}
-        </div>
+        </FieldSet>
       )}
 
-      <div className="sm:col-span-2">
-        <SubmitButton pendingLabel="Salvando...">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {cancelHref && (
+          <Link
+            href={cancelHref}
+            className={buttonVariants({ variant: "ghost" })}
+          >
+            Cancelar
+          </Link>
+        )}
+        <SubmitButton pendingLabel={editando ? "Salvando..." : "Criando..."}>
           {editando ? "Salvar atividade" : "Criar atividade"}
         </SubmitButton>
       </div>

@@ -4,9 +4,14 @@ import { ArrowLeftIcon } from "lucide-react"
 import { createAtividade } from "@/app/painel/actions"
 import { ActivityForm } from "@/components/painel/activity-form"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
-import { flattenPastas } from "@/lib/pastas"
 
 export default async function Page({
   searchParams,
@@ -29,21 +34,24 @@ export default async function Page({
       .order("nome"),
   ])
 
-  const pastaPadrao =
-    pastaSolicitada !== null &&
-    (pastas ?? []).some((item) => item.id === pastaSolicitada)
-      ? pastaSolicitada
-      : null
+  const pastaDestino =
+    pastaSolicitada === null
+      ? null
+      : ((pastas ?? []).find((item) => item.id === pastaSolicitada) ?? null)
 
   const voltarHref =
-    pastaPadrao === null ? "/painel" : `/painel/pastas/${pastaPadrao}`
+    pastaDestino === null ? "/painel" : `/painel/pastas/${pastaDestino.id}`
 
   return (
-    <div className="m-4 max-w-3xl space-y-6">
-      <div className="space-y-2">
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <Link
           href={voltarHref}
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            className: "self-start",
+          })}
         >
           <ArrowLeftIcon data-icon="inline-start" />
           Voltar
@@ -58,12 +66,22 @@ export default async function Page({
       </div>
 
       <Card>
-        <CardContent className="pt-6">
+        <CardHeader>
+          <CardTitle>Dados da atividade</CardTitle>
+          <CardDescription>
+            Defina o título e a senha, e indique as turmas que vão realizar a
+            atividade.{" "}
+            {pastaDestino
+              ? `Ela será criada na pasta “${pastaDestino.nome}”.`
+              : "Ela será criada na raiz do painel."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <ActivityForm
             action={createAtividade}
-            pastas={flattenPastas(pastas ?? [])}
             turmasExistentes={(turmas ?? []).map((turma) => turma.nome)}
-            pastaPadrao={pastaPadrao}
+            pastaId={pastaDestino?.id ?? null}
+            cancelHref={voltarHref}
           />
         </CardContent>
       </Card>
