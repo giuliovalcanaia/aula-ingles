@@ -8,6 +8,7 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCampos } from "@/components/painel/atividade-campos"
+import { SenhaField } from "@/components/painel/senha-field"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -137,21 +138,7 @@ export function NovaAtividadeForm({
             <CardContent className="flex flex-col gap-6">
               <AtividadeCampos autoFocus />
 
-              <Field>
-                <FieldLabel htmlFor="senha">Senha de liberação</FieldLabel>
-                <Input
-                  id="senha"
-                  name="senha"
-                  type="password"
-                  minLength={4}
-                  placeholder="Mínimo de 4 caracteres"
-                  autoComplete="new-password"
-                  required
-                />
-                <FieldDescription>
-                  O aluno digita esta senha para concluir cada link.
-                </FieldDescription>
-              </Field>
+              <SenhaField />
             </CardContent>
           </Card>
         </TabsContent>
