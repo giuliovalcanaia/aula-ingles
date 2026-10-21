@@ -3,6 +3,9 @@
 import * as React from "react"
 import Link from "next/link"
 import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   FolderPlusIcon,
   HouseIcon,
@@ -13,9 +16,26 @@ import {
 } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { type OrdemExplorer } from "@/components/painel/explorer/explorer-types"
 import { type PastaRow } from "@/lib/pastas"
 import { cn } from "@/lib/utils"
+
+const opcoesOrdem: { value: OrdemExplorer; label: string }[] = [
+  { value: "nome-asc", label: "Nome (A–Z)" },
+  { value: "nome-desc", label: "Nome (Z–A)" },
+  { value: "data-desc", label: "Data de criação (mais recentes)" },
+  { value: "data-asc", label: "Data de criação (mais antigas)" },
+]
 
 export function targetKey(pastaId: number | null) {
   return pastaId === null ? "root" : `pasta:${pastaId}`
@@ -27,6 +47,8 @@ export function ExplorerToolbar({
   onQueryChange,
   view,
   onViewChange,
+  ordem,
+  onOrdemChange,
   onNewFolder,
   newActivityHref,
   onDragOverTo,
@@ -39,6 +61,8 @@ export function ExplorerToolbar({
   onQueryChange: (value: string) => void
   view: "lista" | "grade"
   onViewChange: (view: "lista" | "grade") => void
+  ordem: OrdemExplorer
+  onOrdemChange: (ordem: OrdemExplorer) => void
   onNewFolder: () => void
   newActivityHref: string
   onDragOverTo: (event: React.DragEvent, pastaId: number | null) => void
@@ -118,6 +142,8 @@ export function ExplorerToolbar({
           </Button>
         </div>
 
+        <OrdenarMenu ordem={ordem} onOrdemChange={onOrdemChange} />
+
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" onClick={onNewFolder}>
             <FolderPlusIcon data-icon="inline-start" />
@@ -133,6 +159,59 @@ export function ExplorerToolbar({
         </div>
       </div>
     </div>
+  )
+}
+
+function OrdenarMenu({
+  ordem,
+  onOrdemChange,
+}: {
+  ordem: OrdemExplorer
+  onOrdemChange: (ordem: OrdemExplorer) => void
+}) {
+  const campo = ordem.startsWith("nome") ? "Nome" : "Data"
+  const crescente = ordem.endsWith("asc")
+  const opcaoAtual = opcoesOrdem.find((opcao) => opcao.value === ordem)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={`Ordenar por ${opcaoAtual?.label ?? campo}`}
+          />
+        }
+      >
+        {crescente ? (
+          <ArrowUpIcon data-icon="inline-start" />
+        ) : (
+          <ArrowDownIcon data-icon="inline-start" />
+        )}
+        <span className="hidden sm:inline">Ordenar: </span>
+        {campo}
+        <ChevronDownIcon
+          data-icon="inline-end"
+          className="text-muted-foreground"
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Ordenar por</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={ordem}
+            onValueChange={(value) => onOrdemChange(value as OrdemExplorer)}
+          >
+            {opcoesOrdem.map((opcao) => (
+              <DropdownMenuRadioItem key={opcao.value} value={opcao.value}>
+                {opcao.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

@@ -52,6 +52,11 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
 })
 
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "long",
+  timeStyle: "short",
+})
+
 type ExplorerItemProps = {
   item: ExplorerItem
   view: "lista" | "grade"
@@ -306,11 +311,6 @@ export function ExplorerItemView({
               </p>
             </div>
             {!pasta && (
-              <span className="hidden shrink-0 text-xs text-muted-foreground md:inline">
-                {dateFormatter.format(new Date(item.updated_at))}
-              </span>
-            )}
-            {!pasta && (
               <Badge
                 variant={publicada ? "default" : "secondary"}
                 className="hidden shrink-0 sm:inline-flex"
@@ -318,6 +318,13 @@ export function ExplorerItemView({
                 {statusLabels[item.status] ?? item.status}
               </Badge>
             )}
+            <span
+              className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums md:block"
+              title={`Criado em ${dateTimeFormatter.format(new Date(item.created_at))}`}
+            >
+              <span className="sr-only">Criado em </span>
+              {dateFormatter.format(new Date(item.created_at))}
+            </span>
           </>
         ) : (
           <>

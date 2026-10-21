@@ -12,6 +12,7 @@ export type ExplorerAtividade = {
   subtitulo: string | null
   pasta_id: number | null
   status: string
+  created_at: string
   updated_at: string
   links: number
   turmas: number
@@ -19,6 +20,7 @@ export type ExplorerAtividade = {
 }
 
 export type ExplorerPasta = PastaRow & {
+  created_at: string
   pastaCount: number
   atividadeCount: number
 }
@@ -49,12 +51,12 @@ export async function loadExplorerData(
   ] = await Promise.all([
     supabase
       .from("pastas")
-      .select("id, nome, parent_id")
+      .select("id, nome, parent_id, created_at")
       .is("deleted_at", null)
       .order("nome"),
     supabase
       .from("atividades")
-      .select("id, titulo, subtitulo, pasta_id, status, updated_at")
+      .select("id, titulo, subtitulo, pasta_id, status, created_at, updated_at")
       .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
     supabase.from("links").select("atividade_id"),

@@ -41,8 +41,11 @@ import {
   targetKey,
 } from "@/components/painel/explorer/explorer-toolbar"
 import {
+  ehOrdemExplorer,
   isPasta,
+  nomeDoItem,
   type ExplorerItem,
+  type OrdemExplorer,
 } from "@/components/painel/explorer/explorer-types"
 import { toast } from "@/components/ui/toast"
 import type { ExplorerData } from "@/lib/painel/explorer-data"
@@ -73,6 +76,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
   const pastaAtualId = data.pastaAtual?.id ?? null
   const { selecionados, selecionar, definir, limpar } = useSelecao()
   const [view, setView] = useState<"lista" | "grade">("lista")
+  const [ordem, setOrdem] = useState<OrdemExplorer>("nome-asc")
   const [query, setQuery] = useState("")
   const [dialog, setDialog] = useState<DialogState>(null)
   const [dragging, setDragging] = useState<ExplorerItem | null>(null)
@@ -82,6 +86,8 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
   useEffect(() => {
     const salvo = window.localStorage.getItem("painel:view")
     if (salvo === "lista" || salvo === "grade") setView(salvo)
+    const ordemSalva = window.localStorage.getItem("painel:ordem")
+    if (ehOrdemExplorer(ordemSalva)) setOrdem(ordemSalva)
   }, [])
 
   const itens = useMemo<ExplorerItem[]>(
@@ -99,11 +105,29 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
   )
 
   const termo = normalizar(query.trim())
-  const visiveis = itens.filter((item) => {
-    if (!termo) return true
-    const nome = isPasta(item) ? item.nome : item.titulo
-    return normalizar(nome).includes(termo)
-  })
+  const visiveis = useMemo(() => {
+    const filtrados = itens.filter((item) => {
+      if (!termo) return true
+      return normalizar(nomeDoItem(item)).includes(termo)
+    })
+
+    return [...filtrados].sort((a, b) => {
+      // Pastas continuam agrupadas antes das atividades, como nos
+      // gerenciadores de arquivos.
+      if (isPasta(a) !== isPasta(b)) return isPasta(a) ? -1 : 1
+
+      if (ordem.startsWith("nome")) {
+        const comparacao = nomeDoItem(a).localeCompare(nomeDoItem(b), "pt-BR", {
+          numeric: true,
+          sensitivity: "base",
+        })
+        return ordem === "nome-asc" ? comparacao : -comparacao
+      }
+
+      const comparacao = Date.parse(a.created_at) - Date.parse(b.created_at)
+      return ordem === "data-asc" ? comparacao : -comparacao
+    })
+  }, [itens, ordem, termo])
 
   const chavesVisiveis = visiveis.map(itemKey)
   const selecionadosVisiveis = chavesVisiveis.filter((key) =>
@@ -293,6 +317,11 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
     window.localStorage.setItem("painel:view", nova)
   }
 
+  function alterarOrdem(nova: OrdemExplorer) {
+    setOrdem(nova)
+    window.localStorage.setItem("painel:ordem", nova)
+  }
+
   const novoItem = (
     <div className="flex flex-wrap items-center gap-2">
       <Button
@@ -329,6 +358,8 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
         onQueryChange={setQuery}
         view={view}
         onViewChange={alterarVisao}
+        ordem={ordem}
+        onOrdemChange={alterarOrdem}
         onNewFolder={() =>
           setDialog({ kind: "nova-pasta", parentId: pastaAtualId })
         }
