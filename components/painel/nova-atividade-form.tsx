@@ -8,7 +8,6 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCampos } from "@/components/painel/atividade-campos"
-import { DatePicker } from "@/components/painel/date-picker"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -27,17 +26,11 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-  FieldTitle,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-
-type TurmaAplicacao = {
-  turma: string
-  data: string
-}
 
 type LinkNovo = {
   titulo: string
@@ -58,7 +51,6 @@ function isHttpUrl(value: string) {
 
 type NovaAtividadeFormProps = {
   action: (state: ActionResult, formData: FormData) => Promise<ActionResult>
-  turmasExistentes: string[]
   pastaId: number | null
   pastaNome: string | null
   cancelHref: string
@@ -66,54 +58,14 @@ type NovaAtividadeFormProps = {
 
 export function NovaAtividadeForm({
   action,
-  turmasExistentes,
   pastaId,
   pastaNome,
   cancelHref,
 }: NovaAtividadeFormProps) {
   const [aba, setAba] = useState("informacoes")
-  const [aplicacoes, setAplicacoes] = useState<TurmaAplicacao[]>([])
-  const [turma, setTurma] = useState("")
-  const [data, setData] = useState("")
   const [links, setLinks] = useState<LinkNovo[]>([])
   const [link, setLink] = useState<LinkNovo>(LINK_VAZIO)
   const [erroHref, setErroHref] = useState<string | null>(null)
-
-  function addTurma() {
-    const nome = turma.trim()
-    if (!nome) return
-
-    setAplicacoes((atuais) => {
-      if (
-        atuais.some((item) => item.turma.toLowerCase() === nome.toLowerCase())
-      ) {
-        return atuais
-      }
-      return [...atuais, { turma: nome, data }]
-    })
-    setTurma("")
-    setData("")
-  }
-
-  function removeTurma(index: number) {
-    setAplicacoes((atuais) => atuais.filter((_, i) => i !== index))
-  }
-
-  function updateData(index: number, value: string) {
-    setAplicacoes((atuais) =>
-      atuais.map((item, i) => (i === index ? { ...item, data: value } : item))
-    )
-  }
-
-  // Enter nos campos de turma não deve enviar o formulário: ele adiciona a
-  // turma à lista.
-  function adicionarTurmaComEnter(
-    event: React.KeyboardEvent<HTMLInputElement>
-  ) {
-    if (event.key !== "Enter") return
-    event.preventDefault()
-    addTurma()
-  }
 
   function addLink() {
     const titulo = link.titulo.trim()
@@ -157,16 +109,6 @@ export function NovaAtividadeForm({
   return (
     <ActionForm action={action} className="flex flex-col gap-6">
       <input type="hidden" name="pasta_id" value={pastaId ?? ""} />
-      <input
-        type="hidden"
-        name="aplicacoes"
-        value={JSON.stringify(
-          aplicacoes.map((item) => ({
-            turma: item.turma,
-            data: item.data || null,
-          }))
-        )}
-      />
       <input type="hidden" name="links" value={JSON.stringify(links)} />
 
       <Tabs
@@ -186,8 +128,7 @@ export function NovaAtividadeForm({
             <CardHeader>
               <CardTitle>Informações da atividade</CardTitle>
               <CardDescription>
-                Defina o título e a senha, e indique as turmas que vão realizar
-                a atividade.{" "}
+                Defina o título e a senha da atividade.{" "}
                 {pastaNome
                   ? `Ela será criada na pasta “${pastaNome}”.`
                   : "Ela será criada na raiz do painel."}
@@ -208,91 +149,9 @@ export function NovaAtividadeForm({
                   required
                 />
                 <FieldDescription>
-                  O aluno digita esta senha para concluir cada link. Ela vale
-                  para todas as turmas desta atividade.
+                  O aluno digita esta senha para concluir cada link.
                 </FieldDescription>
               </Field>
-
-              <FieldSet>
-                <FieldLegend>Turmas</FieldLegend>
-                <FieldDescription>
-                  Cada turma recebe um código de entrada e uma lista de nomes
-                  própria. Escolha uma turma existente ou digite uma nova.
-                </FieldDescription>
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                  <Field className="flex-1">
-                    <FieldLabel htmlFor="turma-nova">Turma</FieldLabel>
-                    <Input
-                      id="turma-nova"
-                      list="turmas-existentes"
-                      value={turma}
-                      onChange={(event) => setTurma(event.target.value)}
-                      onKeyDown={adicionarTurmaComEnter}
-                      placeholder="Ex.: 1º ano A"
-                      autoComplete="off"
-                    />
-                    <datalist id="turmas-existentes">
-                      {turmasExistentes.map((nome) => (
-                        <option key={nome} value={nome} />
-                      ))}
-                    </datalist>
-                  </Field>
-                  <Field className="sm:w-40">
-                    <FieldLabel htmlFor="turma-data">Data</FieldLabel>
-                    <DatePicker
-                      id="turma-data"
-                      value={data}
-                      onChange={setData}
-                      placeholder="Data"
-                    />
-                  </Field>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addTurma}
-                    disabled={!turma.trim()}
-                  >
-                    <PlusIcon data-icon="inline-start" />
-                    Adicionar
-                  </Button>
-                </div>
-
-                {aplicacoes.length > 0 ? (
-                  <FieldGroup className="gap-2">
-                    {aplicacoes.map((item, index) => (
-                      <Field
-                        key={`${item.turma}-${index}`}
-                        orientation="horizontal"
-                        className="rounded-lg border p-2"
-                      >
-                        <FieldTitle className="flex-1">{item.turma}</FieldTitle>
-                        <DatePicker
-                          value={item.data}
-                          onChange={(value) => updateData(index, value)}
-                          aria-label={`Data da turma ${item.turma}`}
-                          placeholder="Data"
-                          className="w-40"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={`Remover ${item.turma}`}
-                          onClick={() => removeTurma(index)}
-                        >
-                          <Trash2Icon />
-                        </Button>
-                      </Field>
-                    ))}
-                  </FieldGroup>
-                ) : (
-                  <FieldDescription>
-                    Nenhuma turma adicionada ainda. A atividade precisa de pelo
-                    menos uma para ser publicada.
-                  </FieldDescription>
-                )}
-              </FieldSet>
             </CardContent>
           </Card>
         </TabsContent>

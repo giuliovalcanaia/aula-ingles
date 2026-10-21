@@ -8,16 +8,13 @@ import {
 } from "lucide-react"
 
 import {
-  createAplicacao,
   createLink,
-  deleteAplicacao,
   deleteLink,
   moveLink,
   publishAtividade,
   setAplicacaoStatus,
   unpublishAtividade,
   updateActivityPassword,
-  updateAplicacao,
   updateAtividade,
   updateLink,
   updateStudentProgress,
@@ -25,7 +22,6 @@ import {
 import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
 import { ConfirmAction } from "@/components/painel/confirm-action"
-import { DateField } from "@/components/painel/date-picker"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { Badge } from "@/components/ui/badge"
@@ -97,7 +93,6 @@ export default async function Page({
 
   const [
     { data: pastas },
-    { data: turmas },
     { data: senha },
     { data: links },
     { data: aplicacoes },
@@ -107,7 +102,6 @@ export default async function Page({
       .select("id, nome, parent_id")
       .is("deleted_at", null)
       .order("nome"),
-    supabase.from("turmas").select("id, nome").order("nome"),
     supabase
       .from("atividade_senhas")
       .select("atividade_id")
@@ -120,7 +114,7 @@ export default async function Page({
       .order("ordem"),
     supabase
       .from("aplicacoes")
-      .select("id, codigo, data, status, turma_id")
+      .select("id, codigo, data, status")
       .eq("atividade_id", atividadeId)
       .order("created_at"),
   ])
@@ -161,11 +155,9 @@ export default async function Page({
     participacoesPorAplicacao.set(participacao.aplicacao_id, lista)
   }
 
-  const nomeTurma = new Map(
-    (turmas ?? []).map((turma) => [turma.id, turma.nome])
-  )
   const pasta = (pastas ?? []).find((item) => item.id === atividade.pasta_id)
   const publicada = atividade.status === "publicada"
+  const totalAlunos = participacoes?.length ?? 0
   const voltarHref = pasta ? `/painel/pastas/${pasta.id}` : "/painel"
 
   return (
@@ -196,7 +188,7 @@ export default async function Page({
             )}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span>Pasta: {pasta?.nome ?? "Sem pasta"}</span>
-              <span>Turmas: {(aplicacoes ?? []).length}</span>
+              <span>Alunos: {totalAlunos}</span>
               <span>Links: {(links ?? []).length}</span>
             </div>
           </div>
@@ -226,69 +218,22 @@ export default async function Page({
         </div>
       </div>
 
-      <Tabs defaultValue="turmas" className="gap-4">
+      <Tabs defaultValue="alunos" className="gap-4">
         <TabsList variant="line">
-          <TabsTrigger value="turmas">
-            Turmas ({(aplicacoes ?? []).length})
-          </TabsTrigger>
+          <TabsTrigger value="alunos">Alunos ({totalAlunos})</TabsTrigger>
           <TabsTrigger value="links">
             Links ({(links ?? []).length})
           </TabsTrigger>
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="turmas" className="space-y-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Adicionar turma</CardTitle>
-              <CardDescription>
-                Cada turma recebe um código de entrada e uma lista de nomes
-                própria.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActionForm action={createAplicacao} className="space-y-3">
-                <input type="hidden" name="atividade_id" value={atividade.id} />
-                <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-                  <div className="space-y-2">
-                    <Label htmlFor="nova-turma">Turma</Label>
-                    <Input
-                      id="nova-turma"
-                      name="turma"
-                      list="turmas-da-atividade"
-                      placeholder="Ex.: 1º ano A"
-                      autoComplete="off"
-                      required
-                    />
-                    <datalist id="turmas-da-atividade">
-                      {(turmas ?? []).map((turma) => (
-                        <option key={turma.id} value={turma.nome} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nova-turma-data">Data (opcional)</Label>
-                    <DateField
-                      id="nova-turma-data"
-                      name="data"
-                      placeholder="Data"
-                      className="w-40"
-                    />
-                  </div>
-                  <SubmitButton pendingLabel="Adicionando...">
-                    Adicionar turma
-                  </SubmitButton>
-                </div>
-              </ActionForm>
-            </CardContent>
-          </Card>
-
+        <TabsContent value="alunos" className="space-y-3">
           {!aplicacoes || aplicacoes.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma turma adicionada ainda.
+              Esta atividade não tem um código de entrada.
             </p>
           ) : (
-            aplicacoes.map((aplicacao) => {
+            aplicacoes.map((aplicacao, index) => {
               const alunos = participacoesPorAplicacao.get(aplicacao.id) ?? []
               const aberta = aplicacao.status === "aberta"
 
@@ -299,15 +244,17 @@ export default async function Page({
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <CardTitle>
-                            {nomeTurma.get(aplicacao.turma_id) ?? "Turma"}
+                            {aplicacoes.length > 1
+                              ? `Entrada ${index + 1}`
+                              : "Código de entrada"}
                           </CardTitle>
                           <Badge variant={aberta ? "default" : "secondary"}>
                             {aberta ? "Aberta" : "Encerrada"}
                           </Badge>
                         </div>
                         <CardDescription>
-                          Data: {formatDate(aplicacao.data)} · {alunos.length}{" "}
-                          aluno(s)
+                          Criada em {formatDate(aplicacao.data)} ·{" "}
+                          {alunos.length} aluno(s)
                         </CardDescription>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -334,50 +281,14 @@ export default async function Page({
                             {aberta ? "Encerrar" : "Reabrir"}
                           </SubmitButton>
                         </ActionForm>
-                        <ConfirmAction
-                          action={deleteAplicacao}
-                          fields={{
-                            id: aplicacao.id,
-                            atividade_id: atividade.id,
-                          }}
-                          title={`Excluir a turma ${nomeTurma.get(aplicacao.turma_id) ?? ""}?`}
-                          description="A lista de nomes e o progresso dessa turma serão excluídos."
-                        />
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <ActionForm
-                      action={updateAplicacao}
-                      className="flex flex-wrap items-end gap-2"
-                    >
-                      <input type="hidden" name="id" value={aplicacao.id} />
-                      <input
-                        type="hidden"
-                        name="atividade_id"
-                        value={atividade.id}
-                      />
-                      <div className="space-y-2">
-                        <Label htmlFor={`data-${aplicacao.id}`}>
-                          Data da aula
-                        </Label>
-                        <DateField
-                          id={`data-${aplicacao.id}`}
-                          name="data"
-                          defaultValue={aplicacao.data}
-                          placeholder="Data"
-                          className="w-40"
-                        />
-                      </div>
-                      <SubmitButton variant="outline" size="sm">
-                        Salvar data
-                      </SubmitButton>
-                    </ActionForm>
-
                     {alunos.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        Nenhum aluno entrou nesta turma ainda. Compartilhe o
-                        código {aplicacao.codigo}.
+                        Nenhum aluno entrou ainda. Compartilhe o código{" "}
+                        {aplicacao.codigo}.
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -688,7 +599,7 @@ export default async function Page({
               <CardTitle>Senha de liberação</CardTitle>
               <CardDescription>
                 {senha
-                  ? "A senha está definida. Ela vale para todas as turmas desta atividade."
+                  ? "A senha está definida. Ela vale para todos os alunos desta atividade."
                   : "Nenhuma senha definida. O aluno não consegue concluir os links sem ela."}
               </CardDescription>
             </CardHeader>

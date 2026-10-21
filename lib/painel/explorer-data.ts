@@ -3,7 +3,6 @@ import { pastaBreadcrumb, type PastaRow } from "@/lib/pastas"
 
 export type AplicacaoInfo = {
   codigo: string
-  turma: string
 }
 
 export type ExplorerAtividade = {
@@ -15,7 +14,6 @@ export type ExplorerAtividade = {
   created_at: string
   updated_at: string
   links: number
-  turmas: number
   aplicacoes: AplicacaoInfo[]
 }
 
@@ -47,7 +45,6 @@ export async function loadExplorerData(
     { data: atividades },
     { data: links },
     { data: aplicacoes },
-    { data: turmas },
   ] = await Promise.all([
     supabase
       .from("pastas")
@@ -60,8 +57,7 @@ export async function loadExplorerData(
       .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
     supabase.from("links").select("atividade_id"),
-    supabase.from("aplicacoes").select("atividade_id, codigo, turma_id"),
-    supabase.from("turmas").select("id, nome"),
+    supabase.from("aplicacoes").select("atividade_id, codigo"),
   ])
 
   const pastasAtivas = pastas ?? []
@@ -71,10 +67,6 @@ export async function loadExplorerData(
       : (pastasAtivas.find((pasta) => pasta.id === pastaId) ?? null)
 
   if (pastaId !== null && !pastaAtual) return null
-
-  const nomesTurmas = new Map(
-    (turmas ?? []).map((turma) => [turma.id, turma.nome])
-  )
 
   const linksPorAtividade = new Map<number, number>()
   for (const link of links ?? []) {
@@ -87,10 +79,7 @@ export async function loadExplorerData(
   const aplicacoesPorAtividade = new Map<number, AplicacaoInfo[]>()
   for (const aplicacao of aplicacoes ?? []) {
     const lista = aplicacoesPorAtividade.get(aplicacao.atividade_id) ?? []
-    lista.push({
-      codigo: aplicacao.codigo,
-      turma: nomesTurmas.get(aplicacao.turma_id) ?? "Turma",
-    })
+    lista.push({ codigo: aplicacao.codigo })
     aplicacoesPorAtividade.set(aplicacao.atividade_id, lista)
   }
 
@@ -125,7 +114,6 @@ export async function loadExplorerData(
       return {
         ...atividade,
         links: linksPorAtividade.get(atividade.id) ?? 0,
-        turmas: apps.length,
         aplicacoes: apps,
       }
     })

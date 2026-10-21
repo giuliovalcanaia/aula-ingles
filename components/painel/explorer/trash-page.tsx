@@ -41,7 +41,7 @@ export function TrashPage({ groups }: { groups: TrashGroup[] }) {
             action={emptyTrash}
             fields={{}}
             title="Esvaziar a lixeira?"
-            description="Todos os itens serão excluídos definitivamente, incluindo turmas, códigos, nomes e progresso dos alunos. Essa ação não pode ser desfeita."
+            description="Todos os itens serão excluídos definitivamente, incluindo códigos, nomes e progresso dos alunos. Essa ação não pode ser desfeita."
             confirmLabel="Esvaziar lixeira"
             triggerLabel="Esvaziar lixeira"
             trigger={
@@ -121,7 +121,7 @@ export function TrashPage({ groups }: { groups: TrashGroup[] }) {
                       action={purgeTrash}
                       fields={{ trash_id: group.trashId }}
                       title={`Excluir “${group.nome}” definitivamente?`}
-                      description="Essa ação não pode ser desfeita. Turmas, códigos, nomes e progresso dos alunos serão apagados junto."
+                      description="Essa ação não pode ser desfeita. Códigos, nomes e progresso dos alunos serão apagados junto."
                       confirmLabel="Excluir definitivamente"
                       triggerLabel="Excluir definitivamente"
                       trigger={

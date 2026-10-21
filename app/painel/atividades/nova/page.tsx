@@ -18,14 +18,11 @@ export default async function Page({
 
   const supabase = await createClient()
 
-  const [{ data: turmas }, { data: pastas }] = await Promise.all([
-    supabase.from("turmas").select("nome").order("nome"),
-    supabase
-      .from("pastas")
-      .select("id, nome, parent_id")
-      .is("deleted_at", null)
-      .order("nome"),
-  ])
+  const { data: pastas } = await supabase
+    .from("pastas")
+    .select("id, nome, parent_id")
+    .is("deleted_at", null)
+    .order("nome")
 
   const pastaDestino =
     pastaSolicitada === null
@@ -55,13 +52,12 @@ export default async function Page({
         <p className="text-sm text-muted-foreground">
           A atividade nasce como rascunho. Preencha as informações, adicione os
           links e, quando estiver pronta, publique para os alunos entrarem com o
-          código de cada turma.
+          código da atividade.
         </p>
       </div>
 
       <NovaAtividadeForm
         action={createAtividade}
-        turmasExistentes={(turmas ?? []).map((turma) => turma.nome)}
         pastaId={pastaDestino?.id ?? null}
         pastaNome={pastaDestino?.nome ?? null}
         cancelHref={voltarHref}

@@ -317,7 +317,7 @@ export function TrashConfirm({
           <AlertDialogDescription>
             {tipo === "pasta"
               ? "As subpastas e as atividades dentro dela também vão para a lixeira. Você pode restaurar tudo depois."
-              : "As turmas, os códigos, os nomes e o progresso dos alunos continuam guardados e voltam se você restaurar a atividade."}
+              : "O código de entrada, os nomes e o progresso dos alunos continuam guardados e voltam se você restaurar a atividade."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

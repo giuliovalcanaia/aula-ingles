@@ -20,7 +20,7 @@ export function JoinCodeForm() {
     const value = codigo.trim().toUpperCase()
 
     if (!value) {
-      toast.add({ type: "warning", title: "Informe o código da turma." })
+      toast.add({ type: "warning", title: "Informe o código da atividade." })
       return
     }
 

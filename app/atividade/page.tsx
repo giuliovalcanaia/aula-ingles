@@ -85,7 +85,7 @@ export default async function Page({
             </p>
             <CardDescription>
               Confira o código com o professor. A atividade pode ter sido
-              fechada ou o código pode ser de outra turma.
+              fechada ou o código pode ser de outra atividade.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -114,9 +114,9 @@ export default async function Page({
       <div className="mx-auto flex max-w-4xl flex-col p-4">
         <Card>
           <CardHeader>
-            <p className="font-medium">Turma encerrada.</p>
+            <p className="font-medium">Atividade encerrada.</p>
             <CardDescription>
-              O professor encerrou esta turma. Fale com ele para mais
+              O professor encerrou esta atividade. Fale com ele para mais
               informações.
             </CardDescription>
           </CardHeader>

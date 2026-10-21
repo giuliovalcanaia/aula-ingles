@@ -16,11 +16,6 @@ export type ActionResult = {
 
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
-type AplicacaoInput = {
-  turma: string
-  data: string | null
-}
-
 type LinkInput = {
   titulo: string
   href: string
@@ -29,7 +24,17 @@ type LinkInput = {
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 const STATUSES = ["aberta", "fazendo", "concluida", "bloqueada"] as const
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const TODAY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Sao_Paulo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+})
+
+/** Data de hoje (`yyyy-MM-dd`) no fuso da escola. */
+function hoje() {
+  return TODAY_FORMATTER.format(new Date())
+}
 
 function field(formData: FormData, name: string) {
   const value = formData.get(name)
@@ -60,36 +65,6 @@ function isHttpUrl(value: string) {
     return url.protocol === "http:" || url.protocol === "https:"
   } catch {
     return false
-  }
-}
-
-function normalizeDate(value: string | null | undefined) {
-  if (!value) return null
-  return DATE_PATTERN.test(value) ? value : null
-}
-
-function parseAplicacoes(raw: string): AplicacaoInput[] | null {
-  if (!raw) return null
-
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return null
-
-    const aplicacoes: AplicacaoInput[] = []
-
-    for (const item of parsed) {
-      if (typeof item !== "object" || item === null) continue
-      const turma = String((item as { turma?: unknown }).turma ?? "").trim()
-      const data = normalizeDate(
-        String((item as { data?: unknown }).data ?? "").trim() || null
-      )
-
-      if (turma) aplicacoes.push({ turma, data })
-    }
-
-    return aplicacoes
-  } catch {
-    return null
   }
 }
 
@@ -183,44 +158,6 @@ async function generateCode(supabase: Supabase) {
   }
 
   return null
-}
-
-async function resolveTurmaId(
-  supabase: Supabase,
-  professorId: number,
-  nome: string
-) {
-  const nomeNormalizado = nome.trim()
-
-  const { data: existentes } = await supabase
-    .from("turmas")
-    .select("id, nome")
-    .eq("professor_id", professorId)
-
-  const match = (existentes ?? []).find(
-    (turma) => turma.nome.trim().toLowerCase() === nomeNormalizado.toLowerCase()
-  )
-
-  if (match) return match.id
-
-  const { data, error } = await supabase
-    .from("turmas")
-    .insert({ nome: nomeNormalizado, professor_id: professorId })
-    .select("id")
-    .single()
-
-  if (error || !data) {
-    const { data: reconsulta } = await supabase
-      .from("turmas")
-      .select("id")
-      .eq("professor_id", professorId)
-      .eq("nome", nomeNormalizado)
-      .maybeSingle()
-
-    return reconsulta?.id ?? null
-  }
-
-  return data.id
 }
 
 // ---------------------------------------------------------
@@ -512,15 +449,11 @@ export async function createAtividade(
   const titulo = field(formData, "titulo")
   const pastaId = idField(formData, "pasta_id")
   const senha = field(formData, "senha")
-  const aplicacoes = parseAplicacoes(field(formData, "aplicacoes"))
   const links = parseLinks(field(formData, "links"))
 
   if (!titulo) return fail("Informe o título da atividade.")
   if (senha.length < 4)
     return fail("A senha precisa ter pelo menos 4 caracteres.")
-  if (!aplicacoes || aplicacoes.length === 0) {
-    return fail("Adicione pelo menos uma turma para a atividade.")
-  }
   if (!links) return fail("Revise os links informados e tente novamente.")
 
   if (pastaId !== null) {
@@ -576,38 +509,25 @@ export async function createAtividade(
     }
   }
 
-  for (const aplicacao of aplicacoes) {
-    const turmaId = await resolveTurmaId(
-      teacher.supabase,
-      teacher.professorId,
-      aplicacao.turma
-    )
+  const codigo = await generateCode(teacher.supabase)
 
-    if (!turmaId) {
-      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
-      return fail(`Não foi possível criar a turma "${aplicacao.turma}".`)
-    }
+  if (!codigo) {
+    await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+    return fail("Não foi possível gerar o código de entrada.")
+  }
 
-    const codigo = await generateCode(teacher.supabase)
+  const { error: entradaError } = await teacher.supabase
+    .from("aplicacoes")
+    .insert({
+      atividade_id: atividade.id,
+      turma_id: null,
+      codigo,
+      data: hoje(),
+    })
 
-    if (!codigo) {
-      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
-      return fail("Não foi possível gerar o código de entrada.")
-    }
-
-    const { error: aplicacaoError } = await teacher.supabase
-      .from("aplicacoes")
-      .insert({
-        atividade_id: atividade.id,
-        turma_id: turmaId,
-        codigo,
-        data: aplicacao.data,
-      })
-
-    if (aplicacaoError) {
-      await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
-      return fail("Não foi possível criar a turma da atividade.")
-    }
+  if (entradaError) {
+    await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+    return fail("Não foi possível criar o código de entrada.")
   }
 
   revalidatePainel()
@@ -735,29 +655,21 @@ export async function publishAtividade(
   const id = idField(formData, "id")
   if (!id) return fail("Atividade inválida.")
 
-  const [{ data: senha }, { count: totalLinks }, { count: totalAplicacoes }] =
-    await Promise.all([
-      teacher.supabase
-        .from("atividade_senhas")
-        .select("atividade_id")
-        .eq("atividade_id", id)
-        .maybeSingle(),
-      teacher.supabase
-        .from("links")
-        .select("id", { count: "exact", head: true })
-        .eq("atividade_id", id),
-      teacher.supabase
-        .from("aplicacoes")
-        .select("id", { count: "exact", head: true })
-        .eq("atividade_id", id),
-    ])
+  const [{ data: senha }, { count: totalLinks }] = await Promise.all([
+    teacher.supabase
+      .from("atividade_senhas")
+      .select("atividade_id")
+      .eq("atividade_id", id)
+      .maybeSingle(),
+    teacher.supabase
+      .from("links")
+      .select("id", { count: "exact", head: true })
+      .eq("atividade_id", id),
+  ])
 
   if (!senha) return fail("Defina a senha da atividade antes de publicar.")
   if ((totalLinks ?? 0) === 0) {
     return fail("Adicione pelo menos um link antes de publicar.")
-  }
-  if ((totalAplicacoes ?? 0) === 0) {
-    return fail("Adicione pelo menos uma turma antes de publicar.")
   }
 
   const { data, error } = await teacher.supabase
@@ -932,70 +844,8 @@ export async function emptyTrash(
 }
 
 // ---------------------------------------------------------
-// Turmas da atividade (aplicações)
+// Entrada da atividade (aplicação com o código do aluno)
 // ---------------------------------------------------------
-
-export async function createAplicacao(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  const atividadeId = idField(formData, "atividade_id")
-  const turma = field(formData, "turma")
-  const data = normalizeDate(optionalField(formData, "data"))
-
-  if (!atividadeId) return fail("Atividade inválida.")
-  if (!turma) return fail("Informe a turma.")
-
-  const turmaId = await resolveTurmaId(
-    teacher.supabase,
-    teacher.professorId,
-    turma
-  )
-
-  if (!turmaId) return fail("Não foi possível criar a turma.")
-
-  const codigo = await generateCode(teacher.supabase)
-  if (!codigo) return fail("Não foi possível gerar o código de entrada.")
-
-  const { error } = await teacher.supabase.from("aplicacoes").insert({
-    atividade_id: atividadeId,
-    turma_id: turmaId,
-    codigo,
-    data,
-  })
-
-  if (error) return fail("Não foi possível adicionar a turma.")
-
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok("Turma adicionada.")
-}
-
-export async function updateAplicacao(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  const id = idField(formData, "id")
-  const atividadeId = idField(formData, "atividade_id")
-  const data = normalizeDate(optionalField(formData, "data"))
-
-  if (!id || !atividadeId) return fail("Turma inválida.")
-
-  const { error } = await teacher.supabase
-    .from("aplicacoes")
-    .update({ data })
-    .eq("id", id)
-
-  if (error) return fail("Não foi possível salvar a turma.")
-
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok("Turma atualizada.")
-}
 
 export async function setAplicacaoStatus(
   _prev: ActionResult,
@@ -1008,7 +858,7 @@ export async function setAplicacaoStatus(
   const atividadeId = idField(formData, "atividade_id")
   const status = field(formData, "status")
 
-  if (!id || !atividadeId) return fail("Turma inválida.")
+  if (!id || !atividadeId) return fail("Entrada inválida.")
   if (status !== "aberta" && status !== "encerrada") {
     return fail("Situação inválida.")
   }
@@ -1018,33 +868,10 @@ export async function setAplicacaoStatus(
     .update({ status })
     .eq("id", id)
 
-  if (error) return fail("Não foi possível alterar a turma.")
+  if (error) return fail("Não foi possível alterar a entrada.")
 
   revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok(status === "encerrada" ? "Turma encerrada." : "Turma reaberta.")
-}
-
-export async function deleteAplicacao(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  const id = idField(formData, "id")
-  const atividadeId = idField(formData, "atividade_id")
-
-  if (!id || !atividadeId) return fail("Turma inválida.")
-
-  const { error } = await teacher.supabase
-    .from("aplicacoes")
-    .delete()
-    .eq("id", id)
-
-  if (error) return fail("Não foi possível excluir a turma.")
-
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok("Turma excluída.")
+  return ok(status === "encerrada" ? "Entrada encerrada." : "Entrada reaberta.")
 }
 
 // ---------------------------------------------------------

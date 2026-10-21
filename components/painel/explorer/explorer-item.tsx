@@ -106,6 +106,15 @@ export function ExplorerItemView({
   const nome = pasta ? item.nome : item.titulo
   const descricao = pasta ? null : item.subtitulo
   const publicada = !pasta && item.status === "publicada"
+  const codigos = pasta
+    ? []
+    : item.aplicacoes.map((aplicacao) => aplicacao.codigo)
+
+  const resumo = pasta
+    ? `${item.pastaCount} pasta(s) · ${item.atividadeCount} atividade(s)`
+    : codigos.length === 1
+      ? `Código ${codigos[0]} · ${item.links} link(s)`
+      : `${codigos.length} códigos · ${item.links} link(s)`
 
   const actions: MenuAction[] = [
     {
@@ -173,16 +182,24 @@ export function ExplorerItemView({
       onSelect: onTogglePublish,
     })
 
-    if (item.aplicacoes.length > 0) {
+    if (codigos.length === 1) {
+      actions.push({
+        kind: "item",
+        key: "copiar-codigo",
+        label: `Copiar código ${codigos[0]}`,
+        icon: <ClipboardCopyIcon />,
+        onSelect: () => onCopyCode(codigos[0]),
+      })
+    } else if (codigos.length > 1) {
       actions.push({
         kind: "sub",
         key: "copiar-codigo",
         label: "Copiar código",
         icon: <ClipboardCopyIcon />,
-        items: item.aplicacoes.map((aplicacao) => ({
-          key: `${aplicacao.turma}-${aplicacao.codigo}`,
-          label: `${aplicacao.turma} · ${aplicacao.codigo}`,
-          onSelect: () => onCopyCode(aplicacao.codigo),
+        items: codigos.map((codigo) => ({
+          key: codigo,
+          label: codigo,
+          onSelect: () => onCopyCode(codigo),
         })),
       })
     }
@@ -304,10 +321,7 @@ export function ExplorerItemView({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{nome}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {descricao ||
-                  (pasta
-                    ? `${item.pastaCount} pasta(s) · ${item.atividadeCount} atividade(s)`
-                    : `${item.turmas} turma(s) · ${item.links} link(s)`)}
+                {descricao || resumo}
               </p>
             </div>
             {!pasta && (
@@ -342,10 +356,7 @@ export function ExplorerItemView({
             <div className="min-w-0">
               <p className="line-clamp-2 text-sm font-medium">{nome}</p>
               <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                {descricao ||
-                  (pasta
-                    ? `${item.pastaCount} pasta(s) · ${item.atividadeCount} atividade(s)`
-                    : `${item.turmas} turma(s) · ${item.links} link(s)`)}
+                {descricao || resumo}
               </p>
             </div>
             {!pasta && (
