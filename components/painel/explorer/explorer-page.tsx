@@ -346,10 +346,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
 
   return (
     <div
-      className={cn(
-        "flex w-full max-w-6xl flex-col gap-4",
-        isPending && "opacity-80"
-      )}
+      className={cn("flex w-full flex-col gap-4", isPending && "opacity-80")}
       aria-busy={isPending}
     >
       <ExplorerToolbar
