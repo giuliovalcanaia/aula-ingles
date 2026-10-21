@@ -196,7 +196,7 @@ function OrdenarMenu({
           className="text-muted-foreground"
         />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
+      <DropdownMenuContent align="center" className="w-60">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Ordenar por</DropdownMenuLabel>
           <DropdownMenuRadioGroup
