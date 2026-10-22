@@ -26,15 +26,9 @@ import {
 import { cn } from "@/lib/utils"
 
 export function NavProjects({
-  items,
   pastas,
   trashCount,
 }: {
-  items: {
-    name: string
-    url: string
-    icon: React.ReactNode
-  }[]
   pastas: PastaRow[]
   trashCount: number
 }) {
@@ -94,31 +88,6 @@ export function NavProjects({
 
   return (
     <>
-      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarGroupLabel>Painel</SidebarGroupLabel>
-        <SidebarMenu>
-          {items.map((item) => {
-            const active =
-              item.url === "/painel"
-                ? pathname === "/painel"
-                : pathname.startsWith(item.url)
-
-            return (
-              <SidebarMenuItem key={item.name}>
-                <SidebarMenuButton
-                  isActive={active}
-                  tooltip={item.name}
-                  render={<Link href={item.url} />}
-                >
-                  {item.icon}
-                  <span>{item.name}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
-      </SidebarGroup>
-
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel>Pastas</SidebarGroupLabel>
         <SidebarMenu>

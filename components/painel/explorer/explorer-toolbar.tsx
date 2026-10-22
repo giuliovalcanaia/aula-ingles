@@ -113,8 +113,8 @@ export function ExplorerToolbar({
           <Input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar nesta pasta..."
-            aria-label="Buscar nesta pasta"
+            placeholder="Buscar em todas as pastas..."
+            aria-label="Buscar em todas as pastas"
             className="pl-8"
           />
         </div>
@@ -190,7 +190,16 @@ function OrdenarMenu({
           <ArrowDownIcon data-icon="inline-start" />
         )}
         <span className="hidden sm:inline">Ordenar: </span>
-        {campo}
+        {/* Reserva a largura do maior rótulo para o botão não mudar de tamanho. */}
+        <span className="grid text-left">
+          <span className="invisible col-start-1 row-start-1" aria-hidden>
+            Nome
+          </span>
+          <span className="invisible col-start-1 row-start-1" aria-hidden>
+            Data
+          </span>
+          <span className="col-start-1 row-start-1">{campo}</span>
+        </span>
         <ChevronDownIcon
           data-icon="inline-end"
           className="text-muted-foreground"

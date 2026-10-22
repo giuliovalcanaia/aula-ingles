@@ -17,15 +17,20 @@ export type ExplorerAtividade = {
   aplicacoes: AplicacaoInfo[]
 }
 
-export type ExplorerPasta = PastaRow & {
+export type ExplorerPastaBase = PastaRow & {
   created_at: string
+}
+
+export type ExplorerPasta = ExplorerPastaBase & {
   pastaCount: number
   atividadeCount: number
 }
 
 export type ExplorerData = {
-  pastas: PastaRow[]
+  pastas: ExplorerPastaBase[]
   pastasAtuais: ExplorerPasta[]
+  /** Todas as atividades do professor, para a busca global. */
+  todasAtividades: ExplorerAtividade[]
   atividadesAtuais: ExplorerAtividade[]
   breadcrumb: PastaRow[]
   pastaAtual: PastaRow | null
@@ -107,20 +112,22 @@ export async function loadExplorerData(
       atividadeCount: atividadesPorPasta.get(pasta.id) ?? 0,
     }))
 
-  const atividadesAtuais: ExplorerAtividade[] = (atividades ?? [])
-    .filter((atividade) => atividade.pasta_id === pastaId)
-    .map((atividade) => {
-      const apps = aplicacoesPorAtividade.get(atividade.id) ?? []
-      return {
-        ...atividade,
-        links: linksPorAtividade.get(atividade.id) ?? 0,
-        aplicacoes: apps,
-      }
+  const todasAtividades: ExplorerAtividade[] = (atividades ?? []).map(
+    (atividade) => ({
+      ...atividade,
+      links: linksPorAtividade.get(atividade.id) ?? 0,
+      aplicacoes: aplicacoesPorAtividade.get(atividade.id) ?? [],
     })
+  )
+
+  const atividadesAtuais = todasAtividades.filter(
+    (atividade) => atividade.pasta_id === pastaId
+  )
 
   return {
     pastas: pastasAtivas,
     pastasAtuais,
+    todasAtividades,
     atividadesAtuais,
     breadcrumb: pastaBreadcrumb(pastasAtivas, pastaId),
     pastaAtual,

@@ -61,6 +61,7 @@ type ExplorerItemProps = {
   item: ExplorerItem
   view: "lista" | "grade"
   selected: boolean
+  local?: string
   onSelect: (mods?: { ctrl?: boolean; shift?: boolean }) => void
   onOpen: () => void
   onNewFolder: () => void
@@ -84,6 +85,7 @@ export function ExplorerItemView({
   item,
   view,
   selected,
+  local,
   onSelect,
   onOpen,
   onNewFolder,
@@ -115,6 +117,9 @@ export function ExplorerItemView({
     : codigos.length === 1
       ? `Código ${codigos[0]} · ${item.links} link(s)`
       : `${codigos.length} códigos · ${item.links} link(s)`
+
+  // Nos resultados da busca global, acrescenta onde o item está.
+  const legenda = [descricao || resumo, local].filter(Boolean).join(" · ")
 
   const actions: MenuAction[] = [
     {
@@ -321,7 +326,7 @@ export function ExplorerItemView({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{nome}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {descricao || resumo}
+                {legenda}
               </p>
             </div>
             {!pasta && (
@@ -356,7 +361,7 @@ export function ExplorerItemView({
             <div className="min-w-0">
               <p className="line-clamp-2 text-sm font-medium">{nome}</p>
               <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                {descricao || resumo}
+                {legenda}
               </p>
             </div>
             {!pasta && (

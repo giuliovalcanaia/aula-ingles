@@ -12,7 +12,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, LayoutListIcon, Plus } from "lucide-react"
+import { GalleryVerticalEndIcon } from "lucide-react"
 
 import { type PastaRow } from "@/lib/pastas"
 
@@ -41,26 +41,13 @@ export function AppSidebar({
     },
   ]
 
-  const projects = [
-    {
-      name: "Explorador",
-      url: "/painel",
-      icon: <LayoutListIcon />,
-    },
-    {
-      name: "Nova atividade",
-      url: "/painel/atividades/nova",
-      icon: <Plus />,
-    },
-  ]
-
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects items={projects} pastas={pastas} trashCount={trashCount} />
+        <NavProjects pastas={pastas} trashCount={trashCount} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

@@ -49,7 +49,7 @@ import {
 } from "@/components/painel/explorer/explorer-types"
 import { toast } from "@/components/ui/toast"
 import type { ExplorerData } from "@/lib/painel/explorer-data"
-import { pastaDescendantIds } from "@/lib/pastas"
+import { pastaBreadcrumb, pastaDescendantIds } from "@/lib/pastas"
 import { itemKey } from "@/lib/selecao"
 import { useSelecao } from "@/components/painel/selecao-context"
 import { cn } from "@/lib/utils"
@@ -104,9 +104,43 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
     [data.pastasAtuais, data.atividadesAtuais]
   )
 
+  // Mesma lista, mas com todas as pastas e atividades do professor — usada
+  // enquanto há um termo de busca.
+  const itensGlobais = useMemo<ExplorerItem[]>(() => {
+    const subpastas = new Map<number, number>()
+    const atividades = new Map<number, number>()
+
+    for (const pasta of data.pastas) {
+      if (pasta.parent_id === null) continue
+      subpastas.set(pasta.parent_id, (subpastas.get(pasta.parent_id) ?? 0) + 1)
+    }
+
+    for (const atividade of data.todasAtividades) {
+      if (atividade.pasta_id === null) continue
+      atividades.set(
+        atividade.pasta_id,
+        (atividades.get(atividade.pasta_id) ?? 0) + 1
+      )
+    }
+
+    return [
+      ...data.pastas.map((pasta) => ({
+        ...pasta,
+        tipo: "pasta" as const,
+        pastaCount: subpastas.get(pasta.id) ?? 0,
+        atividadeCount: atividades.get(pasta.id) ?? 0,
+      })),
+      ...data.todasAtividades.map((atividade) => ({
+        ...atividade,
+        tipo: "atividade" as const,
+      })),
+    ]
+  }, [data.pastas, data.todasAtividades])
+
   const termo = normalizar(query.trim())
   const visiveis = useMemo(() => {
-    const filtrados = itens.filter((item) => {
+    const fonte = termo ? itensGlobais : itens
+    const filtrados = fonte.filter((item) => {
       if (!termo) return true
       return normalizar(nomeDoItem(item)).includes(termo)
     })
@@ -127,7 +161,29 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
       const comparacao = Date.parse(a.created_at) - Date.parse(b.created_at)
       return ordem === "data-asc" ? comparacao : -comparacao
     })
-  }, [itens, ordem, termo])
+  }, [itens, itensGlobais, ordem, termo])
+
+  // Caminho de cada pasta, para mostrar onde cada resultado da busca está.
+  const caminhos = useMemo(() => {
+    if (!termo) return null
+
+    const mapa = new Map<number | null, string>()
+    mapa.set(null, "Início")
+
+    for (const pasta of data.pastas) {
+      const nomes = pastaBreadcrumb(data.pastas, pasta.id).map(
+        (item) => item.nome
+      )
+      mapa.set(pasta.id, ["Início", ...nomes].join(" / "))
+    }
+
+    return mapa
+  }, [data.pastas, termo])
+
+  function localDoItem(item: ExplorerItem) {
+    if (!caminhos) return undefined
+    return caminhos.get(isPasta(item) ? item.parent_id : item.pasta_id)
+  }
 
   const chavesVisiveis = visiveis.map(itemKey)
   const selecionadosVisiveis = chavesVisiveis.filter((key) =>
@@ -137,6 +193,10 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
   useEffect(() => {
     limpar()
   }, [pastaAtualId, limpar])
+
+  useEffect(() => {
+    setQuery("")
+  }, [pastaAtualId])
 
   useEffect(() => {
     limpar()
@@ -207,7 +267,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
       router.push(`/painel/pastas/${item.id}`)
       return
     }
-    router.push(`/painel/atividades/${item.id}`)
+    router.push(`/painel/atividades/${item.id}?aba=configuracoes`)
   }
 
   function selecionarItem(
@@ -394,6 +454,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
               item={item}
               view={view}
               selected={selecionados.has(itemKey(item))}
+              local={localDoItem(item)}
               onSelect={(mods) => selecionarItem(item, mods)}
               onOpen={() => abrir(item)}
               onNewFolder={() =>
@@ -431,7 +492,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
         {selecionadosVisiveis > 0
           ? `${selecionadosVisiveis} de ${visiveis.length} selecionado(s)`
           : `${visiveis.length} item(ns)`}
-        {termo ? ` para “${query.trim()}”` : ""}
+        {termo ? ` para “${query.trim()}” em todas as pastas` : ""}
       </p>
 
       {dialog?.kind === "nova-pasta" && (
@@ -512,7 +573,7 @@ function EmptyExplorer({
             Nenhum resultado
           </CardTitle>
           <CardDescription>
-            Não encontramos pastas ou atividades com esse nome.
+            Não encontramos pastas ou atividades com esse nome em nenhuma pasta.
           </CardDescription>
         </CardHeader>
       </Card>
