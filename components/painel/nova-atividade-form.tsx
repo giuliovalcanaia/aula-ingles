@@ -1,16 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { flushSync } from "react-dom"
 
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
+import { AtividadeCabecalho } from "@/components/painel/atividade-cabecalho"
 import { AtividadeCampos } from "@/components/painel/atividade-campos"
+import { AtividadeTabsList } from "@/components/painel/atividade-tabs-list"
 import { LinksTextarea } from "@/components/painel/links-textarea"
 import { SenhaField } from "@/components/painel/senha-field"
 import { SubmitButton } from "@/components/painel/submit-button"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -18,59 +18,81 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 
 type NovaAtividadeFormProps = {
   action: (state: ActionResult, formData: FormData) => Promise<ActionResult>
   pastaId: number | null
   pastaNome: string | null
-  cancelHref: string
+  voltarHref: string
 }
 
 export function NovaAtividadeForm({
   action,
   pastaId,
   pastaNome,
-  cancelHref,
+  voltarHref,
 }: NovaAtividadeFormProps) {
-  const [aba, setAba] = useState("informacoes")
+  const [aba, setAba] = useState("configuracoes")
 
-  // Os campos da aba de informações ficam ocultos quando outra aba está ativa,
-  // e um campo oculto não pode receber foco: a validação nativa não conseguiria
-  // apontar o que falta. Voltamos para a aba antes de deixar o envio acontecer.
-  function mostrarInformacoesAntesDeEnviar() {
-    if (aba !== "informacoes") flushSync(() => setAba("informacoes"))
+  // Os campos de Configurações ficam ocultos quando outra aba está ativa, e
+  // um campo oculto não pode receber foco. Voltamos para a aba antes de deixar
+  // a validação nativa apontar o que falta.
+  function mostrarConfiguracoesAntesDeEnviar() {
+    if (aba !== "configuracoes") {
+      flushSync(() => setAba("configuracoes"))
+    }
   }
 
   return (
     <ActionForm action={action} className="flex flex-col gap-6">
       <input type="hidden" name="pasta_id" value={pastaId ?? ""} />
 
+      <AtividadeCabecalho
+        voltarHref={voltarHref}
+        titulo="Nova atividade"
+        subtitulo="A atividade nasce como rascunho. Preencha os dados e adicione os links; depois de criar, você poderá publicar."
+        badge={{ label: "Rascunho", variant: "secondary" }}
+        meta={<span>Pasta: {pastaNome ?? "Sem pasta"}</span>}
+        acoes={
+          <SubmitButton
+            onClick={mostrarConfiguracoesAntesDeEnviar}
+            pendingLabel="Criando..."
+          >
+            Criar atividade
+          </SubmitButton>
+        }
+      />
+
       <Tabs
         value={aba}
         onValueChange={(value) => setAba(String(value))}
         className="gap-4"
       >
-        <TabsList variant="line">
-          <TabsTrigger value="informacoes">Informações</TabsTrigger>
-          <TabsTrigger value="links">Links</TabsTrigger>
-        </TabsList>
+        <AtividadeTabsList modo="criar" linksCount={0} />
 
-        <TabsContent value="informacoes" keepMounted>
+        <TabsContent value="configuracoes" keepMounted className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Informações da atividade</CardTitle>
+              <CardTitle>Dados da atividade</CardTitle>
               <CardDescription>
-                Defina o título e a senha da atividade.{" "}
-                {pastaNome
-                  ? `Ela será criada na pasta “${pastaNome}”.`
-                  : "Ela será criada na raiz do painel."}
+                Título e subtítulo que o aluno vê.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-6">
+            <CardContent>
               <AtividadeCampos autoFocus />
+            </CardContent>
+          </Card>
 
-              <SenhaField />
+          <Card>
+            <CardHeader>
+              <CardTitle>Senha de liberação</CardTitle>
+              <CardDescription>
+                A senha vale para todos os alunos desta atividade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SenhaField label="Senha" />
             </CardContent>
           </Card>
         </TabsContent>
@@ -80,7 +102,8 @@ export function NovaAtividadeForm({
             <CardHeader>
               <CardTitle>Links</CardTitle>
               <CardDescription>
-                Você pode criar a atividade vazia e completar os links depois.
+                Um link por linha, na ordem em que o aluno deve fazer. Você pode
+                criar a atividade vazia e completar os links depois.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -89,21 +112,6 @@ export function NovaAtividadeForm({
           </Card>
         </TabsContent>
       </Tabs>
-
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Link
-          href={cancelHref}
-          className={buttonVariants({ variant: "ghost" })}
-        >
-          Cancelar
-        </Link>
-        <SubmitButton
-          onClick={mostrarInformacoesAntesDeEnviar}
-          pendingLabel="Criando..."
-        >
-          Criar atividade
-        </SubmitButton>
-      </div>
     </ActionForm>
   )
 }

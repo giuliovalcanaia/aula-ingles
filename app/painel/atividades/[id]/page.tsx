@@ -1,6 +1,4 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeftIcon } from "lucide-react"
 
 import {
   publishAtividade,
@@ -12,15 +10,18 @@ import {
 } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
+import { AtividadeCabecalho } from "@/components/painel/atividade-cabecalho"
+import { AtividadeTabsList } from "@/components/painel/atividade-tabs-list"
 import { LinksDraftProvider } from "@/components/painel/links-draft"
 import { LinksEditorTextarea } from "@/components/painel/links-editor-textarea"
+import { LinksProtectedTabs } from "@/components/painel/links-protected-tabs"
 import { LinksSaveForm } from "@/components/painel/links-save-form"
 import { PreviewActivityButton } from "@/components/painel/preview-activity-button"
+import { SenhaField } from "@/components/painel/senha-field"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { UnsavedChangesGuard } from "@/components/painel/unsaved-changes-guard"
 import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -32,8 +33,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { LinksProtectedTabs } from "@/components/painel/links-protected-tabs"
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TabsContent } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
 
 const statusLabels: Record<string, string> = {
@@ -68,11 +68,14 @@ function formatDate(value: string | null) {
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ aba?: string }>
 }) {
-  const { id } = await params
+  const [{ id }, { aba }] = await Promise.all([params, searchParams])
   const atividadeId = Number(id)
+  const abaInicial = aba === "links" || aba === "alunos" ? aba : "configuracoes"
 
   if (!Number.isInteger(atividadeId) || atividadeId <= 0) notFound()
 
@@ -89,7 +92,7 @@ export default async function Page({
 
   const [
     { data: pastas },
-    { data: senha },
+    { data: senhaComTexto, error: senhaError },
     { data: links },
     { data: aplicacoes },
   ] = await Promise.all([
@@ -100,7 +103,7 @@ export default async function Page({
       .order("nome"),
     supabase
       .from("atividade_senhas")
-      .select("atividade_id")
+      .select("atividade_id, senha_texto")
       .eq("atividade_id", atividadeId)
       .maybeSingle(),
     supabase
@@ -114,6 +117,23 @@ export default async function Page({
       .eq("atividade_id", atividadeId)
       .order("created_at"),
   ])
+
+  // Tolerância de rollout: se a migration da senha visível ainda não foi
+  // aplicada, segue mostrando apenas que a senha existe.
+  let senha: { atividade_id: number; senha_texto: string | null } | null =
+    senhaComTexto
+
+  if (senhaError) {
+    const { data: senhaSemTexto } = await supabase
+      .from("atividade_senhas")
+      .select("atividade_id")
+      .eq("atividade_id", atividadeId)
+      .maybeSingle()
+
+    senha = senhaSemTexto
+      ? { atividade_id: senhaSemTexto.atividade_id, senha_texto: null }
+      : null
+  }
 
   const aplicacaoIds = (aplicacoes ?? []).map((aplicacao) => aplicacao.id)
   const linkIds = (links ?? []).map((link) => link.id)
@@ -158,42 +178,28 @@ export default async function Page({
 
   return (
     <LinksDraftProvider
-      key={atividade.id}
+      key={`${atividade.id}:${abaInicial}`}
       initialValue={(links ?? []).map((link) => link.href).join("\n")}
+      initialTab={abaInicial}
     >
       <div className="m-4 max-w-5xl space-y-6">
-        <div className="space-y-2">
-          <Link
-            href={voltarHref}
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
-          >
-            <ArrowLeftIcon data-icon="inline-start" />
-            Voltar
-          </Link>
-
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  {atividade.titulo}
-                </h1>
-                <Badge variant={publicada ? "default" : "secondary"}>
-                  {statusLabels[atividade.status] ?? atividade.status}
-                </Badge>
-              </div>
-              {atividade.subtitulo && (
-                <p className="text-sm text-muted-foreground">
-                  {atividade.subtitulo}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span>Pasta: {pasta?.nome ?? "Sem pasta"}</span>
-                <span>Alunos: {totalAlunos}</span>
-                <span>Links: {(links ?? []).length}</span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
+        <AtividadeCabecalho
+          voltarHref={voltarHref}
+          titulo={atividade.titulo}
+          subtitulo={atividade.subtitulo}
+          badge={{
+            label: statusLabels[atividade.status] ?? atividade.status,
+            variant: publicada ? "default" : "secondary",
+          }}
+          meta={
+            <>
+              <span>Pasta: {pasta?.nome ?? "Sem pasta"}</span>
+              <span>Alunos: {totalAlunos}</span>
+              <span>Links: {(links ?? []).length}</span>
+            </>
+          }
+          acoes={
+            <>
               {publicada ? (
                 <ActionForm action={unpublishAtividade}>
                   <input type="hidden" name="id" value={atividade.id} />
@@ -209,24 +215,21 @@ export default async function Page({
                   </SubmitButton>
                 </ActionForm>
               )}
-              <LinksSaveForm atividadeId={atividade.id} />
               <TrashActivityButton
                 id={atividade.id}
                 nome={atividade.titulo}
                 redirectTo={voltarHref}
               />
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <LinksProtectedTabs className="gap-4">
-          <TabsList variant="line">
-            <TabsTrigger value="alunos">Alunos ({totalAlunos})</TabsTrigger>
-            <TabsTrigger value="links">
-              Links ({(links ?? []).length})
-            </TabsTrigger>
-            <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-          </TabsList>
+          <AtividadeTabsList
+            modo="editar"
+            linksCount={(links ?? []).length}
+            alunosCount={totalAlunos}
+          />
 
           <TabsContent value="alunos" className="space-y-3">
             {!aplicacoes || aplicacoes.length === 0 ? (
@@ -445,7 +448,10 @@ export default async function Page({
                   aplicar as mudanças.
                 </CardDescription>
                 <CardAction>
-                  <PreviewActivityButton atividadeId={atividade.id} />
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <PreviewActivityButton atividadeId={atividade.id} />
+                    <LinksSaveForm atividadeId={atividade.id} />
+                  </div>
                 </CardAction>
               </CardHeader>
               <CardContent>
@@ -458,6 +464,9 @@ export default async function Page({
             <Card>
               <CardHeader>
                 <CardTitle>Dados da atividade</CardTitle>
+                <CardDescription>
+                  Título e subtítulo que o aluno vê.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ActivityForm action={updateAtividade} atividade={atividade} />
@@ -469,36 +478,32 @@ export default async function Page({
                 <CardTitle>Senha de liberação</CardTitle>
                 <CardDescription>
                   {senha
-                    ? "A senha está definida. Ela vale para todos os alunos desta atividade."
+                    ? senha.senha_texto
+                      ? "A senha está definida. Ela vale para todos os alunos desta atividade."
+                      : "A senha foi definida antes de a exibição ser habilitada. Defina uma nova senha para vê-la aqui."
                     : "Nenhuma senha definida. O aluno não consegue concluir os links sem ela."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ActionForm
                   action={updateActivityPassword}
-                  resetOnSuccess
-                  className="flex flex-col gap-2 sm:flex-row sm:items-end"
+                  className="flex flex-col gap-4"
                 >
                   <input
                     type="hidden"
                     name="atividade_id"
                     value={atividade.id}
                   />
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="nova-senha">Nova senha</Label>
-                    <Input
-                      id="nova-senha"
-                      name="senha"
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={4}
-                      placeholder="Mínimo de 4 caracteres"
-                      required
-                    />
+                  <SenhaField
+                    id="nova-senha"
+                    label="Nova senha"
+                    initialValue={senha?.senha_texto ?? ""}
+                  />
+                  <div className="flex justify-end">
+                    <SubmitButton pendingLabel="Salvando...">
+                      {senha ? "Salvar senha" : "Definir senha"}
+                    </SubmitButton>
                   </div>
-                  <SubmitButton pendingLabel="Salvando...">
-                    {senha ? "Trocar senha" : "Definir senha"}
-                  </SubmitButton>
                 </ActionForm>
               </CardContent>
             </Card>

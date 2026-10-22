@@ -30,17 +30,19 @@ const LinksDraftContext = createContext<LinksDraftContextValue | null>(null)
 
 type LinksDraftProviderProps = {
   initialValue: string
+  initialTab?: string
   children: ReactNode
 }
 
-/** Rascunho da lista de links compartilhado entre o textarea e o topo da página. */
+/** Rascunho da lista de links compartilhado pelo textarea e pela aba de links. */
 export function LinksDraftProvider({
   initialValue,
+  initialTab = "configuracoes",
   children,
 }: LinksDraftProviderProps) {
   const [value, setValue] = useState(initialValue)
   const [savedValue, setSavedValue] = useState(initialValue)
-  const [abaAtiva, setAbaAtiva] = useState("alunos")
+  const [abaAtiva, setAbaAtiva] = useState(initialTab)
   const [pendingAction, setPendingAction] = useState<LinksPendingAction | null>(
     null
   )

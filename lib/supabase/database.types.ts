@@ -67,18 +67,21 @@ export type Database = {
           atividade_id: number
           created_at: string
           senha_hash: string
+          senha_texto: string | null
           updated_at: string
         }
         Insert: {
           atividade_id: number
           created_at?: string
           senha_hash: string
+          senha_texto?: string | null
           updated_at?: string
         }
         Update: {
           atividade_id?: number
           created_at?: string
           senha_hash?: string
+          senha_texto?: string | null
           updated_at?: string
         }
         Relationships: [

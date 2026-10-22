@@ -103,7 +103,9 @@ export default async function Page({
             variant="ghost"
             size="sm"
             nativeButton={false}
-            render={<Link href={`/painel/atividades/${atividade.id}`} />}
+            render={
+              <Link href={`/painel/atividades/${atividade.id}?aba=links`} />
+            }
           >
             <ArrowLeftIcon data-icon="inline-start" />
             Voltar para a atividade

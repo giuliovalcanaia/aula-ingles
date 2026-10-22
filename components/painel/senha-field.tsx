@@ -83,12 +83,19 @@ function sortearSenha() {
 type SenhaFieldProps = {
   id?: string
   name?: string
+  label?: string
+  initialValue?: string
 }
 
 /** Senha de liberação com sorteio de palavras e alternância de visibilidade. */
-export function SenhaField({ id = "senha", name = "senha" }: SenhaFieldProps) {
-  const [senha, setSenha] = useState("")
-  const [visivel, setVisivel] = useState(false)
+export function SenhaField({
+  id = "senha",
+  name = "senha",
+  label = "Senha de liberação",
+  initialValue = "",
+}: SenhaFieldProps) {
+  const [senha, setSenha] = useState(initialValue)
+  const [visivel, setVisivel] = useState(initialValue.length > 0)
 
   function sortear() {
     setSenha(sortearSenha())
@@ -97,7 +104,7 @@ export function SenhaField({ id = "senha", name = "senha" }: SenhaFieldProps) {
 
   return (
     <Field>
-      <FieldLabel htmlFor={id}>Senha de liberação</FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <InputGroup>
         <InputGroupInput
           id={id}
