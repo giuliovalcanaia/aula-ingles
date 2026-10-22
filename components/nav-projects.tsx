@@ -125,6 +125,7 @@ export function NavProjects({
           <SidebarMenuItem>
             <SidebarMenuButton
               type="button"
+              data-nav-href="/painel"
               isActive={pathname === "/painel"}
               tooltip="home"
               aria-expanded={homeTemFilhos ? homeAberta : undefined}
@@ -178,6 +179,7 @@ export function NavProjects({
               <SidebarMenuItem key={pasta.id}>
                 <SidebarMenuButton
                   type="button"
+                  data-nav-href={url}
                   isActive={pathname === url}
                   tooltip={pasta.nome}
                   aria-expanded={temFilhos ? aberta : undefined}

@@ -5,8 +5,8 @@ import { randomInt } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-import { normalizeHttpUrl } from "@/lib/links"
-import { lookupLinkPreview } from "@/lib/link-preview"
+import { parseLinkList } from "@/lib/links"
+import { fallbackLinkTitle, lookupLinkTitles } from "@/lib/link-preview"
 import { separarChaves } from "@/lib/selecao"
 import { createClient } from "@/lib/supabase/server"
 
@@ -17,11 +17,6 @@ export type ActionResult = {
 }
 
 type Supabase = Awaited<ReturnType<typeof createClient>>
-
-type LinkInput = {
-  titulo: string
-  href: string
-}
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 const STATUSES = ["aberta", "fazendo", "concluida", "bloqueada"] as const
@@ -42,6 +37,12 @@ function field(formData: FormData, name: string) {
   return typeof value === "string" ? value.trim() : ""
 }
 
+/** Como `field`, mas sem aparar as bordas (preserva as linhas do textarea). */
+function textField(formData: FormData, name: string) {
+  const value = formData.get(name)
+  return typeof value === "string" ? value : ""
+}
+
 function optionalField(formData: FormData, name: string) {
   const value = field(formData, name)
   return value ? value : null
@@ -58,40 +59,6 @@ function fail(error: string): ActionResult {
 
 function ok(success: string, trashId?: string): ActionResult {
   return { error: null, success, trashId }
-}
-
-function parseLinks(raw: string): LinkInput[] | null {
-  if (!raw) return []
-
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return null
-
-    const links: LinkInput[] = []
-
-    for (const item of parsed) {
-      if (typeof item !== "object" || item === null) return null
-
-      const { titulo, href } = item as {
-        titulo?: unknown
-        href?: unknown
-      }
-
-      const tituloLimpo = String(titulo ?? "").trim()
-      const hrefLimpo = normalizeHttpUrl(String(href ?? "").trim())
-
-      if (!tituloLimpo || !hrefLimpo) return null
-
-      links.push({
-        titulo: tituloLimpo,
-        href: hrefLimpo,
-      })
-    }
-
-    return links
-  } catch {
-    return null
-  }
 }
 
 function parseChaves(raw: string): string[] {
@@ -439,12 +406,12 @@ export async function createAtividade(
   const titulo = field(formData, "titulo")
   const pastaId = idField(formData, "pasta_id")
   const senha = field(formData, "senha")
-  const links = parseLinks(field(formData, "links"))
+  const lista = parseLinkList(textField(formData, "links_texto"))
 
   if (!titulo) return fail("Informe o título da atividade.")
   if (senha.length < 4)
     return fail("A senha precisa ter pelo menos 4 caracteres.")
-  if (!links) return fail("Revise os links informados e tente novamente.")
+  if (!lista.ok) return fail(lista.error)
 
   if (pastaId !== null) {
     const { data: pasta } = await teacher.supabase
@@ -482,20 +449,17 @@ export async function createAtividade(
     return fail("Não foi possível definir a senha da atividade.")
   }
 
-  if (links.length > 0) {
-    const { error: linksError } = await teacher.supabase.from("links").insert(
-      links.map((link, index) => ({
-        atividade_id: atividade.id,
-        titulo: link.titulo,
-        href: link.href,
-        ordem: index + 1,
-      }))
+  if (lista.links.length > 0) {
+    const erroLinks = await aplicarLinks(
+      teacher.supabase,
+      atividade.id,
+      lista.links
     )
 
-    if (linksError) {
-      console.error("createAtividade:links", linksError)
+    if (erroLinks) {
+      console.error("createAtividade:links", erroLinks)
       await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
-      return fail("Não foi possível adicionar os links.")
+      return fail(erroLinks)
     }
   }
 
@@ -868,60 +832,118 @@ export async function setAplicacaoStatus(
 // Links
 // ---------------------------------------------------------
 
-/** Lê o título da página do link para preencher o formulário. */
-export async function fetchLinkPreview(rawHref: string) {
-  const teacher = await getTeacher()
-  if (!teacher) {
-    return {
-      title: null,
-      description: null,
-      error: "unauthorized" as const,
+/** Concilia a lista colada no textarea com os links já gravados. */
+async function aplicarLinks(
+  supabase: Supabase,
+  atividadeId: number,
+  hrefs: string[]
+): Promise<string | null> {
+  // Ordem e unicidade dos hrefs já vêm do parse, mas a função pode ser usada
+  // por outros fluxos: deduplicar aqui evita dois links iguais na conciliação.
+  const lista = [...new Set(hrefs)]
+
+  const { data: atuais, error } = await supabase
+    .from("links")
+    .select("id, href, ordem")
+    .eq("atividade_id", atividadeId)
+    .order("ordem")
+
+  if (error) {
+    console.error("aplicarLinks:select", error)
+    return "Não foi possível carregar os links."
+  }
+
+  const idsPorHref = new Map<string, number[]>()
+  for (const link of atuais ?? []) {
+    const ids = idsPorHref.get(link.href) ?? []
+    ids.push(link.id)
+    idsPorHref.set(link.href, ids)
+  }
+
+  const mantidos: { href: string; id: number }[] = []
+  const novos: string[] = []
+
+  for (const href of lista) {
+    const id = idsPorHref.get(href)?.shift()
+    if (id) mantidos.push({ href, id })
+    else novos.push(href)
+  }
+
+  const mantidosIds = new Set(mantidos.map((link) => link.id))
+  const removidos = (atuais ?? [])
+    .filter((link) => !mantidosIds.has(link.id))
+    .map((link) => link.id)
+
+  // Busca os títulos antes de mexer no banco: se a rede estiver lenta, a lista
+  // atual continua intacta até o momento da gravação.
+  const titulos = await lookupLinkTitles(novos)
+  const maiorOrdem = (atuais ?? []).reduce(
+    (maior, link) => Math.max(maior, link.ordem),
+    0
+  )
+
+  if (removidos.length > 0) {
+    const { error: erroRemover } = await supabase
+      .from("links")
+      .delete()
+      .in("id", removidos)
+
+    if (erroRemover) {
+      console.error("aplicarLinks:delete", erroRemover)
+      return "Não foi possível remover os links antigos."
     }
   }
 
-  return lookupLinkPreview(rawHref)
-}
+  const idsNovos = new Map<string, number>()
 
-export async function createLink(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+  if (novos.length > 0) {
+    // Entram no fim, em ordens temporárias; o reorder_links define a posição
+    // final de todos de uma vez, sem violar unique (atividade_id, ordem).
+    const { data: inseridos, error: erroInserir } = await supabase
+      .from("links")
+      .insert(
+        novos.map((href, index) => ({
+          atividade_id: atividadeId,
+          href,
+          titulo: titulos.get(href) ?? fallbackLinkTitle(href),
+          ordem: maiorOrdem + index + 1,
+        }))
+      )
+      .select("id, href")
 
-  const atividadeId = idField(formData, "atividade_id")
-  const titulo = field(formData, "titulo")
-  const href = normalizeHttpUrl(field(formData, "href"))
+    if (erroInserir || !inseridos) {
+      console.error("aplicarLinks:insert", erroInserir)
+      return "Não foi possível adicionar os links."
+    }
 
-  if (!atividadeId) return fail("Atividade inválida.")
-  if (!titulo) return fail("Informe o título do link.")
-  if (!href)
-    return fail(
-      "Informe um endereço válido, como google.com ou https://google.com."
-    )
-
-  const { data: ultimo } = await teacher.supabase
-    .from("links")
-    .select("ordem")
-    .eq("atividade_id", atividadeId)
-    .order("ordem", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  const { error } = await teacher.supabase.from("links").insert({
-    atividade_id: atividadeId,
-    titulo,
-    href,
-    ordem: (ultimo?.ordem ?? 0) + 1,
-  })
-
-  if (error) {
-    console.error("createLink", error)
-    return fail("Não foi possível adicionar o link.")
+    for (const link of inseridos) {
+      idsNovos.set(link.href, link.id)
+    }
   }
 
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok("Link adicionado.")
+  const idsFinais = lista.map((href) => {
+    const mantido = mantidos.find((link) => link.href === href)
+    return mantido?.id ?? idsNovos.get(href) ?? 0
+  })
+
+  if (idsFinais.some((id) => !id)) {
+    console.error("aplicarLinks:ids", { atividadeId, idsFinais })
+    return "Não foi possível organizar os links."
+  }
+
+  if (idsFinais.length > 0) {
+    const { error: erroOrdem } = await supabase.rpc("reorder_links", {
+      p_atividade_id: atividadeId,
+      p_link_ids: idsFinais,
+    })
+
+    if (erroOrdem) {
+      console.error("aplicarLinks:reorder", erroOrdem)
+      return "Não foi possível organizar os links."
+    }
+  }
+
+  return null
 }
 
 export async function updateLinks(
@@ -934,108 +956,23 @@ export async function updateLinks(
   const atividadeId = idField(formData, "atividade_id")
   if (!atividadeId) return fail("Atividade inválida.")
 
-  const { data: links, error: linksError } = await teacher.supabase
-    .from("links")
+  const { data: atividade } = await teacher.supabase
+    .from("atividades")
     .select("id")
-    .eq("atividade_id", atividadeId)
-    .order("ordem")
+    .eq("id", atividadeId)
+    .is("deleted_at", null)
+    .maybeSingle()
 
-  if (linksError) {
-    console.error("updateLinks:select", linksError)
-    return fail("Não foi possível carregar os links.")
-  }
+  if (!atividade) return fail("Atividade não encontrada.")
 
-  if (!links || links.length === 0) return fail("Nenhum link para salvar.")
+  const lista = parseLinkList(textField(formData, "links_texto"))
+  if (!lista.ok) return fail(lista.error)
 
-  const atualizacoes: { id: number; titulo: string; href: string }[] = []
-
-  for (const link of links) {
-    const titulo = field(formData, `titulo-${link.id}`)
-    const href = normalizeHttpUrl(field(formData, `href-${link.id}`))
-
-    if (!titulo) return fail("Informe o título de todos os links.")
-    if (!href)
-      return fail(
-        "Informe um endereço válido em todos os links, como google.com ou https://google.com."
-      )
-
-    atualizacoes.push({ id: link.id, titulo, href })
-  }
-
-  const resultados = await Promise.all(
-    atualizacoes.map((link) =>
-      teacher.supabase
-        .from("links")
-        .update({ titulo: link.titulo, href: link.href })
-        .eq("id", link.id)
-        .eq("atividade_id", atividadeId)
-        .select("id")
-    )
-  )
-
-  // `update` sem linhas afetadas não gera erro no PostgREST (ex.: RLS filtrando
-  // ou link já removido); sem esta checagem a tela diria "salvo" sem salvar.
-  const falhou = resultados.find(
-    (resultado) => resultado.error || !resultado.data?.length
-  )
-
-  if (falhou) {
-    console.error("updateLinks", falhou.error)
-    return fail("Não foi possível salvar os links. Recarregue a página.")
-  }
+  const erro = await aplicarLinks(teacher.supabase, atividadeId, lista.links)
+  if (erro) return fail(erro)
 
   revalidatePainel(`/painel/atividades/${atividadeId}`)
   return ok("Links atualizados.")
-}
-
-export async function reorderLinks(
-  atividadeId: number,
-  linkIds: number[]
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  if (
-    !Number.isInteger(atividadeId) ||
-    atividadeId <= 0 ||
-    linkIds.length === 0 ||
-    !linkIds.every((id) => Number.isInteger(id) && id > 0)
-  ) {
-    return fail("Ordem de links inválida.")
-  }
-
-  const { error } = await teacher.supabase.rpc("reorder_links", {
-    p_atividade_id: atividadeId,
-    p_link_ids: linkIds,
-  })
-
-  if (error) {
-    console.error("reorderLinks", error)
-    return fail("Não foi possível reordenar os links.")
-  }
-
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok("Links reordenados.")
-}
-
-export async function deleteLink(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  const id = idField(formData, "id")
-  const atividadeId = idField(formData, "atividade_id")
-
-  if (!id || !atividadeId) return fail("Link inválido.")
-
-  const { error } = await teacher.supabase.from("links").delete().eq("id", id)
-
-  if (error) return fail("Não foi possível excluir o link.")
-
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok("Link excluído.")
 }
 
 // ---------------------------------------------------------

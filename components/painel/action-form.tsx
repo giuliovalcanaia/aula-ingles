@@ -12,6 +12,7 @@ type ActionFormProps = {
   id?: string
   resetOnSuccess?: boolean
   onSuccess?: () => void
+  onError?: () => void
 }
 
 export function ActionForm({
@@ -21,6 +22,7 @@ export function ActionForm({
   id,
   resetOnSuccess = false,
   onSuccess,
+  onError,
 }: ActionFormProps) {
   const [state, formAction] = useActionState(action, { error: null })
   const formRef = useRef<HTMLFormElement>(null)
@@ -32,6 +34,7 @@ export function ActionForm({
 
     if (state.error) {
       toast.add({ type: "error", title: state.error })
+      onError?.()
       return
     }
 
@@ -40,7 +43,7 @@ export function ActionForm({
       if (resetOnSuccess) formRef.current?.reset()
       onSuccess?.()
     }
-  }, [state, resetOnSuccess, onSuccess])
+  }, [state, resetOnSuccess, onSuccess, onError])
 
   return (
     <form ref={formRef} id={id} action={formAction} className={className}>

@@ -3,21 +3,21 @@ import { notFound } from "next/navigation"
 import { ArrowLeftIcon } from "lucide-react"
 
 import {
-  createLink,
-  deleteLink,
   publishAtividade,
   setAplicacaoStatus,
   unpublishAtividade,
   updateActivityPassword,
   updateAtividade,
-  updateLinks,
   updateStudentProgress,
 } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
-import { LinksTable } from "@/components/painel/links-table"
+import { LinksDraftProvider } from "@/components/painel/links-draft"
+import { LinksEditorTextarea } from "@/components/painel/links-editor-textarea"
+import { LinksSaveForm } from "@/components/painel/links-save-form"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
+import { UnsavedChangesGuard } from "@/components/painel/unsaved-changes-guard"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -30,7 +30,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LinksProtectedTabs } from "@/components/painel/links-protected-tabs"
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
 
 const statusLabels: Record<string, string> = {
@@ -154,337 +155,352 @@ export default async function Page({
   const voltarHref = pasta ? `/painel/pastas/${pasta.id}` : "/painel"
 
   return (
-    <div className="m-4 max-w-5xl space-y-6">
-      <div className="space-y-2">
-        <Link
-          href={voltarHref}
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
-        >
-          <ArrowLeftIcon data-icon="inline-start" />
-          Voltar
-        </Link>
+    <LinksDraftProvider
+      key={atividade.id}
+      initialValue={(links ?? []).map((link) => link.href).join("\n")}
+    >
+      <div className="m-4 max-w-5xl space-y-6">
+        <div className="space-y-2">
+          <Link
+            href={voltarHref}
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
+            <ArrowLeftIcon data-icon="inline-start" />
+            Voltar
+          </Link>
 
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  {atividade.titulo}
+                </h1>
+                <Badge variant={publicada ? "default" : "secondary"}>
+                  {statusLabels[atividade.status] ?? atividade.status}
+                </Badge>
+              </div>
+              {atividade.subtitulo && (
+                <p className="text-sm text-muted-foreground">
+                  {atividade.subtitulo}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span>Pasta: {pasta?.nome ?? "Sem pasta"}</span>
+                <span>Alunos: {totalAlunos}</span>
+                <span>Links: {(links ?? []).length}</span>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
-                {atividade.titulo}
-              </h1>
-              <Badge variant={publicada ? "default" : "secondary"}>
-                {statusLabels[atividade.status] ?? atividade.status}
-              </Badge>
+              {publicada ? (
+                <ActionForm action={unpublishAtividade}>
+                  <input type="hidden" name="id" value={atividade.id} />
+                  <SubmitButton variant="outline" pendingLabel="Salvando...">
+                    Voltar para rascunho
+                  </SubmitButton>
+                </ActionForm>
+              ) : (
+                <ActionForm action={publishAtividade}>
+                  <input type="hidden" name="id" value={atividade.id} />
+                  <SubmitButton pendingLabel="Publicando...">
+                    Publicar
+                  </SubmitButton>
+                </ActionForm>
+              )}
+              <LinksSaveForm atividadeId={atividade.id} />
+              <TrashActivityButton
+                id={atividade.id}
+                nome={atividade.titulo}
+                redirectTo={voltarHref}
+              />
             </div>
-            {atividade.subtitulo && (
-              <p className="text-sm text-muted-foreground">
-                {atividade.subtitulo}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span>Pasta: {pasta?.nome ?? "Sem pasta"}</span>
-              <span>Alunos: {totalAlunos}</span>
-              <span>Links: {(links ?? []).length}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {publicada ? (
-              <ActionForm action={unpublishAtividade}>
-                <input type="hidden" name="id" value={atividade.id} />
-                <SubmitButton variant="outline" pendingLabel="Salvando...">
-                  Voltar para rascunho
-                </SubmitButton>
-              </ActionForm>
-            ) : (
-              <ActionForm action={publishAtividade}>
-                <input type="hidden" name="id" value={atividade.id} />
-                <SubmitButton pendingLabel="Publicando...">
-                  Publicar
-                </SubmitButton>
-              </ActionForm>
-            )}
-            {(links ?? []).length > 0 && (
-              <ActionForm id="links-form" action={updateLinks}>
-                <input type="hidden" name="atividade_id" value={atividade.id} />
-                <SubmitButton variant="outline" pendingLabel="Salvando...">
-                  Salvar links
-                </SubmitButton>
-              </ActionForm>
-            )}
-            <TrashActivityButton
-              id={atividade.id}
-              nome={atividade.titulo}
-              redirectTo={voltarHref}
-            />
           </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="alunos" className="gap-4">
-        <TabsList variant="line">
-          <TabsTrigger value="alunos">Alunos ({totalAlunos})</TabsTrigger>
-          <TabsTrigger value="links">
-            Links ({(links ?? []).length})
-          </TabsTrigger>
-          <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-        </TabsList>
+        <LinksProtectedTabs className="gap-4">
+          <TabsList variant="line">
+            <TabsTrigger value="alunos">Alunos ({totalAlunos})</TabsTrigger>
+            <TabsTrigger value="links">
+              Links ({(links ?? []).length})
+            </TabsTrigger>
+            <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="alunos" className="space-y-3">
-          {!aplicacoes || aplicacoes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Esta atividade não tem um código de entrada.
-            </p>
-          ) : (
-            aplicacoes.map((aplicacao, index) => {
-              const alunos = participacoesPorAplicacao.get(aplicacao.id) ?? []
-              const aberta = aplicacao.status === "aberta"
+          <TabsContent value="alunos" className="space-y-3">
+            {!aplicacoes || aplicacoes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Esta atividade não tem um código de entrada.
+              </p>
+            ) : (
+              aplicacoes.map((aplicacao, index) => {
+                const alunos = participacoesPorAplicacao.get(aplicacao.id) ?? []
+                const aberta = aplicacao.status === "aberta"
 
-              return (
-                <Card key={aplicacao.id}>
-                  <CardHeader>
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <CardTitle>
-                            {aplicacoes.length > 1
-                              ? `Entrada ${index + 1}`
-                              : "Código de entrada"}
-                          </CardTitle>
-                          <Badge variant={aberta ? "default" : "secondary"}>
-                            {aberta ? "Aberta" : "Encerrada"}
-                          </Badge>
+                return (
+                  <Card key={aplicacao.id}>
+                    <CardHeader>
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <CardTitle>
+                              {aplicacoes.length > 1
+                                ? `Entrada ${index + 1}`
+                                : "Código de entrada"}
+                            </CardTitle>
+                            <Badge variant={aberta ? "default" : "secondary"}>
+                              {aberta ? "Aberta" : "Encerrada"}
+                            </Badge>
+                          </div>
+                          <CardDescription>
+                            Criada em {formatDate(aplicacao.data)} ·{" "}
+                            {alunos.length} aluno(s)
+                          </CardDescription>
                         </div>
-                        <CardDescription>
-                          Criada em {formatDate(aplicacao.data)} ·{" "}
-                          {alunos.length} aluno(s)
-                        </CardDescription>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm font-semibold">
-                          {aplicacao.codigo}
-                        </span>
-                        <ActionForm action={setAplicacaoStatus}>
-                          <input type="hidden" name="id" value={aplicacao.id} />
-                          <input
-                            type="hidden"
-                            name="atividade_id"
-                            value={atividade.id}
-                          />
-                          <input
-                            type="hidden"
-                            name="status"
-                            value={aberta ? "encerrada" : "aberta"}
-                          />
-                          <SubmitButton
-                            variant="outline"
-                            size="sm"
-                            pendingLabel="Salvando..."
-                          >
-                            {aberta ? "Encerrar" : "Reabrir"}
-                          </SubmitButton>
-                        </ActionForm>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {alunos.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Nenhum aluno entrou ainda. Compartilhe o código{" "}
-                        {aplicacao.codigo}.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {alunos.map((aluno) => {
-                          const concluidos = (links ?? []).filter(
-                            (link) =>
-                              progressoPorParticipacaoLink.get(
-                                `${aluno.id}:${link.id}`
-                              )?.status === "concluida"
-                          ).length
-
-                          return (
-                            <div
-                              key={aluno.id}
-                              className="rounded-lg border p-3"
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm font-semibold">
+                            {aplicacao.codigo}
+                          </span>
+                          <ActionForm action={setAplicacaoStatus}>
+                            <input
+                              type="hidden"
+                              name="id"
+                              value={aplicacao.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="atividade_id"
+                              value={atividade.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="status"
+                              value={aberta ? "encerrada" : "aberta"}
+                            />
+                            <SubmitButton
+                              variant="outline"
+                              size="sm"
+                              pendingLabel="Salvando..."
                             >
-                              <details>
-                                <summary className="cursor-pointer text-sm">
-                                  <span className="font-medium">
-                                    {aluno.nome}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {" "}
-                                    · {concluidos}/{(links ?? []).length}{" "}
-                                    concluídos · início{" "}
-                                    {formatDateTime(aluno.iniciado_em)} · fim{" "}
-                                    {formatDateTime(aluno.concluido_em)}
-                                  </span>
-                                </summary>
-                                <div className="mt-3 space-y-2">
-                                  {(links ?? []).map((link, index) => {
-                                    const row =
-                                      progressoPorParticipacaoLink.get(
-                                        `${aluno.id}:${link.id}`
-                                      )
-
-                                    return (
-                                      <ActionForm
-                                        key={link.id}
-                                        action={updateStudentProgress}
-                                        className="flex flex-wrap items-end gap-2 rounded-lg border p-2"
-                                      >
-                                        <input
-                                          type="hidden"
-                                          name="atividade_id"
-                                          value={atividade.id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="participacao_id"
-                                          value={aluno.id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="link_id"
-                                          value={link.id}
-                                        />
-                                        <div className="min-w-40 flex-1 text-sm">
-                                          <span className="text-muted-foreground">
-                                            {index + 1}.
-                                          </span>{" "}
-                                          {link.titulo}
-                                          <span className="block text-xs text-muted-foreground">
-                                            {
-                                              progressoLabels[
-                                                row?.status ?? "bloqueada"
-                                              ]
-                                            }
-                                          </span>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <Label
-                                            htmlFor={`status-${aluno.id}-${link.id}`}
-                                            className="text-xs"
-                                          >
-                                            Situação
-                                          </Label>
-                                          <NativeSelect
-                                            id={`status-${aluno.id}-${link.id}`}
-                                            name="status"
-                                            defaultValue={
-                                              row?.status ?? "bloqueada"
-                                            }
-                                            size="sm"
-                                            className="w-full"
-                                          >
-                                            <NativeSelectOption value="bloqueada">
-                                              Bloqueada
-                                            </NativeSelectOption>
-                                            <NativeSelectOption value="aberta">
-                                              Aberta
-                                            </NativeSelectOption>
-                                            <NativeSelectOption value="fazendo">
-                                              Em andamento
-                                            </NativeSelectOption>
-                                            <NativeSelectOption value="concluida">
-                                              Concluída
-                                            </NativeSelectOption>
-                                          </NativeSelect>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <Label
-                                            htmlFor={`nota-${aluno.id}-${link.id}`}
-                                            className="text-xs"
-                                          >
-                                            Nota
-                                          </Label>
-                                          <Input
-                                            id={`nota-${aluno.id}-${link.id}`}
-                                            name="pontuacao"
-                                            type="number"
-                                            min={0}
-                                            className="w-20"
-                                            defaultValue={row?.pontuacao ?? ""}
-                                            placeholder="—"
-                                          />
-                                        </div>
-                                        <SubmitButton
-                                          variant="outline"
-                                          size="sm"
-                                        >
-                                          Salvar
-                                        </SubmitButton>
-                                      </ActionForm>
-                                    )
-                                  })}
-                                </div>
-                              </details>
-                            </div>
-                          )
-                        })}
+                              {aberta ? "Encerrar" : "Reabrir"}
+                            </SubmitButton>
+                          </ActionForm>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })
-          )}
-        </TabsContent>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {alunos.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum aluno entrou ainda. Compartilhe o código{" "}
+                          {aplicacao.codigo}.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {alunos.map((aluno) => {
+                            const concluidos = (links ?? []).filter(
+                              (link) =>
+                                progressoPorParticipacaoLink.get(
+                                  `${aluno.id}:${link.id}`
+                                )?.status === "concluida"
+                            ).length
 
-        <TabsContent value="links" keepMounted>
-          <LinksTable
-            atividadeId={atividade.id}
-            links={links ?? []}
-            createAction={createLink}
-            deleteAction={deleteLink}
-          />
-        </TabsContent>
+                            return (
+                              <div
+                                key={aluno.id}
+                                className="rounded-lg border p-3"
+                              >
+                                <details>
+                                  <summary className="cursor-pointer text-sm">
+                                    <span className="font-medium">
+                                      {aluno.nome}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      {" "}
+                                      · {concluidos}/{(links ?? []).length}{" "}
+                                      concluídos · início{" "}
+                                      {formatDateTime(aluno.iniciado_em)} · fim{" "}
+                                      {formatDateTime(aluno.concluido_em)}
+                                    </span>
+                                  </summary>
+                                  <div className="mt-3 space-y-2">
+                                    {(links ?? []).map((link, index) => {
+                                      const row =
+                                        progressoPorParticipacaoLink.get(
+                                          `${aluno.id}:${link.id}`
+                                        )
 
-        <TabsContent value="configuracoes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados da atividade</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActivityForm action={updateAtividade} atividade={atividade} />
-            </CardContent>
-          </Card>
+                                      return (
+                                        <ActionForm
+                                          key={link.id}
+                                          action={updateStudentProgress}
+                                          className="flex flex-wrap items-end gap-2 rounded-lg border p-2"
+                                        >
+                                          <input
+                                            type="hidden"
+                                            name="atividade_id"
+                                            value={atividade.id}
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="participacao_id"
+                                            value={aluno.id}
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="link_id"
+                                            value={link.id}
+                                          />
+                                          <div className="min-w-40 flex-1 text-sm">
+                                            <span className="text-muted-foreground">
+                                              {index + 1}.
+                                            </span>{" "}
+                                            {link.titulo}
+                                            <span className="block text-xs text-muted-foreground">
+                                              {
+                                                progressoLabels[
+                                                  row?.status ?? "bloqueada"
+                                                ]
+                                              }
+                                            </span>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label
+                                              htmlFor={`status-${aluno.id}-${link.id}`}
+                                              className="text-xs"
+                                            >
+                                              Situação
+                                            </Label>
+                                            <NativeSelect
+                                              id={`status-${aluno.id}-${link.id}`}
+                                              name="status"
+                                              defaultValue={
+                                                row?.status ?? "bloqueada"
+                                              }
+                                              size="sm"
+                                              className="w-full"
+                                            >
+                                              <NativeSelectOption value="bloqueada">
+                                                Bloqueada
+                                              </NativeSelectOption>
+                                              <NativeSelectOption value="aberta">
+                                                Aberta
+                                              </NativeSelectOption>
+                                              <NativeSelectOption value="fazendo">
+                                                Em andamento
+                                              </NativeSelectOption>
+                                              <NativeSelectOption value="concluida">
+                                                Concluída
+                                              </NativeSelectOption>
+                                            </NativeSelect>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label
+                                              htmlFor={`nota-${aluno.id}-${link.id}`}
+                                              className="text-xs"
+                                            >
+                                              Nota
+                                            </Label>
+                                            <Input
+                                              id={`nota-${aluno.id}-${link.id}`}
+                                              name="pontuacao"
+                                              type="number"
+                                              min={0}
+                                              className="w-20"
+                                              defaultValue={
+                                                row?.pontuacao ?? ""
+                                              }
+                                              placeholder="—"
+                                            />
+                                          </div>
+                                          <SubmitButton
+                                            variant="outline"
+                                            size="sm"
+                                          >
+                                            Salvar
+                                          </SubmitButton>
+                                        </ActionForm>
+                                      )
+                                    })}
+                                  </div>
+                                </details>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })
+            )}
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Senha de liberação</CardTitle>
-              <CardDescription>
-                {senha
-                  ? "A senha está definida. Ela vale para todos os alunos desta atividade."
-                  : "Nenhuma senha definida. O aluno não consegue concluir os links sem ela."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActionForm
-                action={updateActivityPassword}
-                resetOnSuccess
-                className="flex flex-col gap-2 sm:flex-row sm:items-end"
-              >
-                <input type="hidden" name="atividade_id" value={atividade.id} />
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="nova-senha">Nova senha</Label>
-                  <Input
-                    id="nova-senha"
-                    name="senha"
-                    type="password"
-                    autoComplete="new-password"
-                    minLength={4}
-                    placeholder="Mínimo de 4 caracteres"
-                    required
+          <TabsContent value="links" keepMounted>
+            <Card>
+              <CardHeader>
+                <CardTitle>Links</CardTitle>
+                <CardDescription>
+                  A ordem das linhas é a ordem que o aluno vê. Salve para
+                  aplicar as mudanças.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LinksEditorTextarea />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="configuracoes" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados da atividade</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ActivityForm action={updateAtividade} atividade={atividade} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Senha de liberação</CardTitle>
+                <CardDescription>
+                  {senha
+                    ? "A senha está definida. Ela vale para todos os alunos desta atividade."
+                    : "Nenhuma senha definida. O aluno não consegue concluir os links sem ela."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ActionForm
+                  action={updateActivityPassword}
+                  resetOnSuccess
+                  className="flex flex-col gap-2 sm:flex-row sm:items-end"
+                >
+                  <input
+                    type="hidden"
+                    name="atividade_id"
+                    value={atividade.id}
                   />
-                </div>
-                <SubmitButton pendingLabel="Salvando...">
-                  {senha ? "Trocar senha" : "Definir senha"}
-                </SubmitButton>
-              </ActionForm>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="nova-senha">Nova senha</Label>
+                    <Input
+                      id="nova-senha"
+                      name="senha"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={4}
+                      placeholder="Mínimo de 4 caracteres"
+                      required
+                    />
+                  </div>
+                  <SubmitButton pendingLabel="Salvando...">
+                    {senha ? "Trocar senha" : "Definir senha"}
+                  </SubmitButton>
+                </ActionForm>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </LinksProtectedTabs>
+      </div>
+      <UnsavedChangesGuard />
+    </LinksDraftProvider>
   )
 }

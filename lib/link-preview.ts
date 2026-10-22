@@ -239,3 +239,67 @@ export async function lookupLinkPreview(
     return { title: null, description: null, error: "fetch_failed" }
   }
 }
+
+const TITLE_CONCURRENCY = 4
+const TITLE_BUDGET_MS = 6000
+
+/** Título de reserva quando a página não tem um `<title>` legível. */
+export function fallbackLinkTitle(rawUrl: string) {
+  const href = normalizeHttpUrl(rawUrl)
+  if (!href) return rawUrl
+
+  try {
+    return new URL(href).hostname.replace(/^www\./, "")
+  } catch {
+    return href
+  }
+}
+
+/**
+ * Busca os títulos das páginas em paralelo, limitando as requisições
+ * simultâneas e o tempo total. Usado ao salvar a lista de links, então nunca
+ * lança: quando a página não responde, devolve o host como título.
+ */
+export async function lookupLinkTitles(rawUrls: string[]) {
+  const titulos = new Map<string, string>()
+  const todos = [...new Set(rawUrls)]
+  const fila = [...todos]
+
+  if (fila.length === 0) return titulos
+
+  let encerrado = false
+
+  const trabalhadores = Array.from(
+    { length: Math.min(TITLE_CONCURRENCY, fila.length) },
+    async () => {
+      for (;;) {
+        if (encerrado) return
+
+        const href = fila.shift()
+        if (!href) return
+
+        const { title } = await lookupLinkPreview(href)
+        if (encerrado) return
+
+        titulos.set(href, title ?? fallbackLinkTitle(href))
+      }
+    }
+  )
+
+  let prazo: ReturnType<typeof setTimeout> | undefined
+  const tempoEsgotado = new Promise<void>((resolve) => {
+    prazo = setTimeout(resolve, TITLE_BUDGET_MS)
+  })
+
+  await Promise.race([Promise.all(trabalhadores), tempoEsgotado])
+  encerrado = true
+  if (prazo) clearTimeout(prazo)
+
+  // Quem não respondeu a tempo recebe o host, para a lista nunca ficar sem
+  // título.
+  for (const href of todos) {
+    if (!titulos.has(href)) titulos.set(href, fallbackLinkTitle(href))
+  }
+
+  return titulos
+}
