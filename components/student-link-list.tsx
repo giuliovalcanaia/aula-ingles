@@ -7,7 +7,6 @@ import { ConcludeLinkDialog } from "@/components/conclude-link-dialog"
 export type StudentLink = {
   id: number
   titulo: string
-  descricao: string | null
   href: string
   status: ActivityStatus
 }
@@ -43,11 +42,7 @@ export function StudentLinkList({
                 }
               : undefined
           }
-        >
-          {link.descricao && (
-            <p className="text-sm text-muted-foreground">{link.descricao}</p>
-          )}
-        </ClickableCard>
+        />
       ))}
     </div>
   )

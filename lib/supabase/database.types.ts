@@ -431,6 +431,10 @@ export type Database = {
         Args: { p_trash_id: string }
         Returns: undefined
       }
+      reorder_links: {
+        Args: { p_atividade_id: number; p_link_ids: number[] }
+        Returns: undefined
+      }
       restore_trash: {
         Args: { p_trash_id: string }
         Returns: undefined

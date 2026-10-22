@@ -1,28 +1,21 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import {
-  ArrowDownIcon,
-  ArrowLeftIcon,
-  ArrowUpIcon,
-  ExternalLinkIcon,
-} from "lucide-react"
+import { ArrowLeftIcon } from "lucide-react"
 
 import {
   createLink,
   deleteLink,
-  moveLink,
   publishAtividade,
   setAplicacaoStatus,
   unpublishAtividade,
   updateActivityPassword,
   updateAtividade,
-  updateLink,
+  updateLinks,
   updateStudentProgress,
 } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { ActivityForm } from "@/components/painel/activity-form"
-import { ConfirmAction } from "@/components/painel/confirm-action"
-import { LinkTituloCampos } from "@/components/painel/link-titulo-campos"
+import { LinksTable } from "@/components/painel/links-table"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { Badge } from "@/components/ui/badge"
@@ -38,7 +31,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/server"
 
 const statusLabels: Record<string, string> = {
@@ -110,7 +102,7 @@ export default async function Page({
       .maybeSingle(),
     supabase
       .from("links")
-      .select("id, titulo, descricao, href, ordem")
+      .select("id, titulo, href, ordem")
       .eq("atividade_id", atividadeId)
       .order("ordem"),
     supabase
@@ -207,6 +199,14 @@ export default async function Page({
                 <input type="hidden" name="id" value={atividade.id} />
                 <SubmitButton pendingLabel="Publicando...">
                   Publicar
+                </SubmitButton>
+              </ActionForm>
+            )}
+            {(links ?? []).length > 0 && (
+              <ActionForm id="links-form" action={updateLinks}>
+                <input type="hidden" name="atividade_id" value={atividade.id} />
+                <SubmitButton variant="outline" pendingLabel="Salvando...">
+                  Salvar links
                 </SubmitButton>
               </ActionForm>
             )}
@@ -430,132 +430,13 @@ export default async function Page({
           )}
         </TabsContent>
 
-        <TabsContent value="links" className="space-y-3">
-          {!links || links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum link adicionado ainda. Adicione pelo menos um para poder
-              publicar a atividade.
-            </p>
-          ) : (
-            links.map((link, index) => (
-              <Card key={link.id}>
-                <CardContent className="space-y-3 pt-6">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{index + 1}</Badge>
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-medium underline underline-offset-4"
-                      >
-                        {link.href}
-                        <ExternalLinkIcon className="size-3" />
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <ActionForm action={moveLink}>
-                        <input type="hidden" name="id" value={link.id} />
-                        <input
-                          type="hidden"
-                          name="atividade_id"
-                          value={atividade.id}
-                        />
-                        <div className="flex gap-1">
-                          <SubmitButton
-                            variant="ghost"
-                            size="icon-sm"
-                            name="direcao"
-                            value="-1"
-                            aria-label="Mover para cima"
-                            pendingLabel="..."
-                          >
-                            <ArrowUpIcon />
-                          </SubmitButton>
-                          <SubmitButton
-                            variant="ghost"
-                            size="icon-sm"
-                            name="direcao"
-                            value="1"
-                            aria-label="Mover para baixo"
-                            pendingLabel="..."
-                          >
-                            <ArrowDownIcon />
-                          </SubmitButton>
-                        </div>
-                      </ActionForm>
-                      <ConfirmAction
-                        action={deleteLink}
-                        fields={{ id: link.id, atividade_id: atividade.id }}
-                        title="Excluir este link?"
-                        description="O progresso dos alunos nesse link também será excluído."
-                      />
-                    </div>
-                  </div>
-
-                  <ActionForm
-                    action={updateLink}
-                    className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
-                  >
-                    <input type="hidden" name="id" value={link.id} />
-                    <input
-                      type="hidden"
-                      name="atividade_id"
-                      value={atividade.id}
-                    />
-                    <LinkTituloCampos
-                      tituloId={`titulo-${link.id}`}
-                      hrefId={`href-${link.id}`}
-                      tituloInicial={link.titulo}
-                      hrefInicial={link.href}
-                    />
-                    <SubmitButton variant="outline">Salvar</SubmitButton>
-                    <div className="space-y-2 sm:col-span-3">
-                      <Label htmlFor={`descricao-${link.id}`}>
-                        Descrição (opcional)
-                      </Label>
-                      <Textarea
-                        id={`descricao-${link.id}`}
-                        name="descricao"
-                        rows={2}
-                        defaultValue={link.descricao ?? ""}
-                      />
-                    </div>
-                  </ActionForm>
-                </CardContent>
-              </Card>
-            ))
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Adicionar link</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActionForm
-                action={createLink}
-                resetOnSuccess
-                className="space-y-3"
-              >
-                <input type="hidden" name="atividade_id" value={atividade.id} />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <LinkTituloCampos tituloId="novo-titulo" hrefId="novo-href" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nova-descricao">Descrição (opcional)</Label>
-                  <Textarea
-                    id="nova-descricao"
-                    name="descricao"
-                    rows={2}
-                    placeholder="O que o aluno deve fazer neste link"
-                  />
-                </div>
-                <SubmitButton pendingLabel="Adicionando...">
-                  Adicionar link
-                </SubmitButton>
-              </ActionForm>
-            </CardContent>
-          </Card>
+        <TabsContent value="links" keepMounted>
+          <LinksTable
+            atividadeId={atividade.id}
+            links={links ?? []}
+            createAction={createLink}
+            deleteAction={deleteLink}
+          />
         </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-4">

@@ -8,7 +8,7 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCampos } from "@/components/painel/atividade-campos"
-import { BuscarTituloButton } from "@/components/painel/buscar-titulo-button"
+import { BuscarNaPaginaButton } from "@/components/painel/buscar-na-pagina-button"
 import { SenhaField } from "@/components/painel/senha-field"
 import { SubmitButton } from "@/components/painel/submit-button"
 import {
@@ -37,16 +37,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { normalizeHttpUrl } from "@/lib/links"
 
 type LinkNovo = {
   titulo: string
   href: string
-  descricao: string
 }
 
-const LINK_VAZIO: LinkNovo = { titulo: "", href: "", descricao: "" }
+const LINK_VAZIO: LinkNovo = { titulo: "", href: "" }
 
 type NovaAtividadeFormProps = {
   action: (state: ActionResult, formData: FormData) => Promise<ActionResult>
@@ -82,10 +80,7 @@ export function NovaAtividadeForm({
       return
     }
 
-    setLinks((atuais) => [
-      ...atuais,
-      { titulo, href, descricao: link.descricao.trim() },
-    ])
+    setLinks((atuais) => [...atuais, { titulo, href }])
     setLink(LINK_VAZIO)
     setErroHref(null)
     setErroTitulo(null)
@@ -169,11 +164,6 @@ export function NovaAtividadeForm({
                         <span className="truncate text-xs text-muted-foreground">
                           {item.href}
                         </span>
-                        {item.descricao && (
-                          <span className="text-xs text-muted-foreground">
-                            {item.descricao}
-                          </span>
-                        )}
                       </div>
                       <Button
                         type="button"
@@ -235,7 +225,7 @@ export function NovaAtividadeForm({
                         aria-invalid={Boolean(erroHref)}
                       />
                       <InputGroupAddon align="inline-end">
-                        <BuscarTituloButton
+                        <BuscarNaPaginaButton
                           href={link.href}
                           onTitulo={(titulo) => {
                             setLink((atual) => ({ ...atual, titulo }))
@@ -249,24 +239,9 @@ export function NovaAtividadeForm({
                       <FieldError>{erroHref}</FieldError>
                     ) : (
                       <FieldDescription>
-                        Pode digitar sem https:// ou usar “Buscar título”.
+                        Pode digitar sem https:// ou usar “Buscar na página”.
                       </FieldDescription>
                     )}
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="link-descricao">
-                      Descrição (opcional)
-                    </FieldLabel>
-                    <Textarea
-                      id="link-descricao"
-                      value={link.descricao}
-                      onChange={(event) =>
-                        setLink({ ...link, descricao: event.target.value })
-                      }
-                      placeholder="O que o aluno deve fazer neste link"
-                      rows={2}
-                    />
                   </Field>
                 </FieldGroup>
 

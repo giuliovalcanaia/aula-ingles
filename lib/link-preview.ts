@@ -1,10 +1,10 @@
 import { normalizeHttpUrl } from "./links"
 
 /**
- * Busca o título de uma página para preencher o campo automaticamente.
+ * Lê título e descrição de uma página para preencher o link automaticamente.
  *
- * Roda só no servidor (as páginas dos exercícios não liberam CORS). Lê o
- * `<title>` do HTML e, se não houver, o `og:title`. Tem limite de tempo,
+ * Roda só no servidor (as páginas dos exercícios não liberam CORS). Usa o
+ * `<title>`/`og:title` e a `description`/`og:description`. Tem limite de tempo,
  * tamanho e redirecionamentos, e recusa endereços internos/privados.
  */
 
@@ -12,12 +12,16 @@ const TIMEOUT_MS = 6000
 const MAX_BYTES = 512 * 1024
 const MAX_REDIRECTS = 4
 const TITLE_MAX_LENGTH = 140
+const DESCRIPTION_MAX_LENGTH = 300
 
-export type LinkTitleError =
-  "invalid_url" | "fetch_failed" | "not_html" | "no_title"
+export type LinkPreviewError =
+  "invalid_url" | "fetch_failed" | "not_html" | "no_preview"
 
-export type LinkTitleResult =
-  { title: string; error: null } | { title: null; error: LinkTitleError }
+export type LinkPreviewResult = {
+  title: string | null
+  description: string | null
+  error: LinkPreviewError | null
+}
 
 const ENTIDADES: Record<string, string> = {
   amp: "&",
@@ -65,23 +69,48 @@ function decodeEntities(value: string) {
   )
 }
 
-function extractTitle(html: string) {
+function limparTexto(value: string | null | undefined, limite: number) {
+  const limpo = decodeEntities(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  return limpo ? limpo.slice(0, limite) : null
+}
+
+function metaContent(html: string, chave: string) {
+  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
+    const nome = tag.match(/(?:property|name)\s*=\s*(?:"([^"]*)"|'([^']*)')/i)
+    const conteudo = tag.match(/content\s*=\s*(?:"([^"]*)"|'([^']*)')/i)
+
+    const chaveTag = (nome?.[1] ?? nome?.[2] ?? "").toLowerCase()
+    if (chaveTag !== chave.toLowerCase()) continue
+
+    return conteudo?.[1] ?? conteudo?.[2] ?? null
+  }
+
+  return null
+}
+
+function extractPreview(html: string) {
   const semComentarios = html.replace(/<!--[\s\S]*?-->/g, " ")
 
   const titleTag = semComentarios.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
 
-  const ogTag = semComentarios.match(
-    /<meta[^>]+(?:property|name)\s*=\s*["']og:title["'][^>]*>/i
-  )?.[0]
+  const title =
+    limparTexto(titleTag, TITLE_MAX_LENGTH) ??
+    limparTexto(metaContent(semComentarios, "og:title"), TITLE_MAX_LENGTH)
 
-  const ogTitle = ogTag?.match(/content\s*=\s*["']([^"']*)["']/i)?.[1]
+  const description =
+    limparTexto(
+      metaContent(semComentarios, "og:description"),
+      DESCRIPTION_MAX_LENGTH
+    ) ??
+    limparTexto(
+      metaContent(semComentarios, "description"),
+      DESCRIPTION_MAX_LENGTH
+    )
 
-  const bruto = (titleTag ?? "").trim() || (ogTitle ?? "").trim()
-  const limpo = decodeEntities(bruto).replace(/\s+/g, " ").trim()
-
-  if (!limpo) return null
-
-  return limpo.slice(0, TITLE_MAX_LENGTH)
+  return { title, description }
 }
 
 function isPrivateHostname(hostname: string) {
@@ -138,18 +167,18 @@ async function readLimited(response: Response, maxBytes: number) {
   return html + decoder.decode()
 }
 
-export async function lookupLinkTitle(
+export async function lookupLinkPreview(
   rawUrl: string
-): Promise<LinkTitleResult> {
+): Promise<LinkPreviewResult> {
   const href = normalizeHttpUrl(rawUrl)
-  if (!href) return { title: null, error: "invalid_url" }
+  if (!href) return { title: null, description: null, error: "invalid_url" }
 
   let current = new URL(href)
 
   try {
     for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
       if (isPrivateHostname(current.hostname)) {
-        return { title: null, error: "invalid_url" }
+        return { title: null, description: null, error: "invalid_url" }
       }
 
       const response = await fetch(current, {
@@ -168,33 +197,45 @@ export async function lookupLinkTitle(
         const location = response.headers.get("location")
         await response.body?.cancel().catch(() => {})
 
-        if (!location) return { title: null, error: "fetch_failed" }
+        if (!location) {
+          return { title: null, description: null, error: "fetch_failed" }
+        }
 
         current = new URL(location, current)
 
         if (current.protocol !== "http:" && current.protocol !== "https:") {
-          return { title: null, error: "invalid_url" }
+          return { title: null, description: null, error: "invalid_url" }
         }
 
         continue
       }
 
-      if (!response.ok) return { title: null, error: "fetch_failed" }
+      if (!response.ok) {
+        return { title: null, description: null, error: "fetch_failed" }
+      }
 
       const contentType = response.headers.get("content-type") ?? ""
-      if (!/html/i.test(contentType)) return { title: null, error: "not_html" }
+      if (!/html/i.test(contentType)) {
+        return { title: null, description: null, error: "not_html" }
+      }
 
       const declarado = Number(response.headers.get("content-length") ?? "0")
-      if (declarado > MAX_BYTES) return { title: null, error: "fetch_failed" }
+      if (declarado > MAX_BYTES) {
+        return { title: null, description: null, error: "fetch_failed" }
+      }
 
       const html = await readLimited(response, MAX_BYTES)
-      const title = extractTitle(html)
+      const { title, description } = extractPreview(html)
 
-      return title ? { title, error: null } : { title: null, error: "no_title" }
+      if (!title && !description) {
+        return { title: null, description: null, error: "no_preview" }
+      }
+
+      return { title, description, error: null }
     }
 
-    return { title: null, error: "fetch_failed" }
+    return { title: null, description: null, error: "fetch_failed" }
   } catch {
-    return { title: null, error: "fetch_failed" }
+    return { title: null, description: null, error: "fetch_failed" }
   }
 }

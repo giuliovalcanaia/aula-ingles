@@ -63,6 +63,7 @@ export default async function Page({
     .from("participacoes")
     .select("id, nome, iniciado_em, concluido_em")
     .eq("aplicacao_id", aplicacao.id)
+    .eq("estudante_id", estudante.id)
     .maybeSingle()
 
   if (!participacao) {
@@ -128,7 +129,7 @@ export default async function Page({
   const [{ data: links }, { data: progresso }] = await Promise.all([
     supabase
       .from("links")
-      .select("id, titulo, descricao, href, ordem")
+      .select("id, titulo, href, ordem")
       .eq("atividade_id", atividade.id)
       .order("ordem", { ascending: true }),
     supabase
@@ -144,7 +145,6 @@ export default async function Page({
   const items = (links ?? []).map((link) => ({
     id: link.id,
     titulo: link.titulo,
-    descricao: link.descricao,
     href: link.href,
     status: statusByLink.get(link.id) ?? "bloqueada",
   }))

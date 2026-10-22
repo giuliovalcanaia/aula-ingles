@@ -9,6 +9,7 @@ type ActionFormProps = {
   action: (state: ActionResult, formData: FormData) => Promise<ActionResult>
   children: React.ReactNode
   className?: string
+  id?: string
   resetOnSuccess?: boolean
   onSuccess?: () => void
 }
@@ -17,6 +18,7 @@ export function ActionForm({
   action,
   children,
   className,
+  id,
   resetOnSuccess = false,
   onSuccess,
 }: ActionFormProps) {
@@ -41,7 +43,7 @@ export function ActionForm({
   }, [state, resetOnSuccess, onSuccess])
 
   return (
-    <form ref={formRef} action={formAction} className={className}>
+    <form ref={formRef} id={id} action={formAction} className={className}>
       {children}
     </form>
   )
