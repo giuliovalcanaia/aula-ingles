@@ -15,6 +15,7 @@ import { ActivityForm } from "@/components/painel/activity-form"
 import { LinksDraftProvider } from "@/components/painel/links-draft"
 import { LinksEditorTextarea } from "@/components/painel/links-editor-textarea"
 import { LinksSaveForm } from "@/components/painel/links-save-form"
+import { PreviewActivityButton } from "@/components/painel/preview-activity-button"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
 import { UnsavedChangesGuard } from "@/components/painel/unsaved-changes-guard"
@@ -22,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -442,6 +444,9 @@ export default async function Page({
                   A ordem das linhas é a ordem que o aluno vê. Salve para
                   aplicar as mudanças.
                 </CardDescription>
+                <CardAction>
+                  <PreviewActivityButton atividadeId={atividade.id} />
+                </CardAction>
               </CardHeader>
               <CardContent>
                 <LinksEditorTextarea />

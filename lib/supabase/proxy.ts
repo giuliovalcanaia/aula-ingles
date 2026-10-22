@@ -3,15 +3,15 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import type { Database } from "./database.types"
 
-const PROTECTED_PREFIX = "/painel"
+const PROTECTED_PREFIXES = ["/painel", "/previa"]
 
 // O login do professor dura 24 horas a partir do início da sessão. Alunos
 // anônimos não são afetados.
 const PROFESSOR_SESSION_TTL_MS = 24 * 60 * 60 * 1000
 
 function isProtectedPath(pathname: string) {
-  return (
-    pathname === PROTECTED_PREFIX || pathname.startsWith(`${PROTECTED_PREFIX}/`)
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )
 }
 

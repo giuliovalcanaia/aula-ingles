@@ -1,13 +1,9 @@
 import { redirect } from "next/navigation"
 
+import { StudentActivityHeader } from "@/components/student-activity-header"
 import { StudentLinkList } from "@/components/student-link-list"
 import type { ActivityStatus } from "@/components/clickable-card"
 import { Card, CardDescription, CardHeader } from "@/components/ui/card"
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from "@/components/ui/progress"
 import { createClient } from "@/lib/supabase/server"
 
 const statuses: ActivityStatus[] = [
@@ -150,40 +146,28 @@ export default async function Page({
   }))
 
   const concluidas = items.filter((item) => item.status === "concluida").length
-  const progressoPercentual =
-    items.length > 0 ? Math.round((concluidas / items.length) * 100) : 0
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col space-y-4">
-      <div className="m-4 mt-4">
-        <h1 className="scroll-m-24 text-2xl font-semibold tracking-tight sm:text-3xl">
-          {atividade.titulo}
-        </h1>
-        {atividade.subtitulo && (
-          <p className="text-muted-foreground sm:text-base">
-            {atividade.subtitulo}
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground">
-          Aluno: {participacao.nome}
-          {aplicacao.data && (
-            <>
-              {" · "}Data da aula:{" "}
-              {new Intl.DateTimeFormat("pt-BR", {
-                dateStyle: "short",
-              }).format(new Date(`${aplicacao.data}T12:00:00`))}
-            </>
-          )}
-        </p>
-        <Card className="mt-4">
-          <CardHeader>
-            <Progress value={progressoPercentual} className="w-full">
-              <ProgressLabel>Progresso da Atividade</ProgressLabel>
-              <ProgressValue />
-            </Progress>
-          </CardHeader>
-        </Card>
-      </div>
+      <StudentActivityHeader
+        titulo={atividade.titulo}
+        subtitulo={atividade.subtitulo}
+        meta={
+          <>
+            Aluno: {participacao.nome}
+            {aplicacao.data && (
+              <>
+                {" · "}Data da aula:{" "}
+                {new Intl.DateTimeFormat("pt-BR", {
+                  dateStyle: "short",
+                }).format(new Date(`${aplicacao.data}T12:00:00`))}
+              </>
+            )}
+          </>
+        }
+        concluidas={concluidas}
+        total={items.length}
+      />
 
       <div className="m-4 mt-8">
         {items.length === 0 ? (
