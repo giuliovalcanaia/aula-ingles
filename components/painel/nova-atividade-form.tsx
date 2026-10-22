@@ -1,12 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { flushSync } from "react-dom"
 
 import type { ActionResult } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCabecalho } from "@/components/painel/atividade-cabecalho"
-import { AtividadeCampos } from "@/components/painel/atividade-campos"
 import { AtividadeTabsList } from "@/components/painel/atividade-tabs-list"
 import { LinksTextarea } from "@/components/painel/links-textarea"
 import { SenhaField } from "@/components/painel/senha-field"
@@ -35,32 +33,24 @@ export function NovaAtividadeForm({
 }: NovaAtividadeFormProps) {
   const [aba, setAba] = useState("configuracoes")
 
-  // Os campos de Configurações ficam ocultos quando outra aba está ativa, e
-  // um campo oculto não pode receber foco. Voltamos para a aba antes de deixar
-  // a validação nativa apontar o que falta.
-  function mostrarConfiguracoesAntesDeEnviar() {
-    if (aba !== "configuracoes") {
-      flushSync(() => setAba("configuracoes"))
-    }
-  }
-
   return (
-    <ActionForm action={action} className="flex flex-col gap-6">
+    <ActionForm
+      action={action}
+      className="flex flex-col gap-6"
+      onError={(error) => {
+        if (error === "Informe o título da atividade.") {
+          document.getElementById("titulo-atividade")?.focus()
+        }
+      }}
+    >
       <input type="hidden" name="pasta_id" value={pastaId ?? ""} />
 
       <AtividadeCabecalho
         voltarHref={voltarHref}
-        titulo="Nova atividade"
-        subtitulo="A atividade nasce como rascunho. Preencha os dados e adicione os links; depois de criar, você poderá publicar."
-        badge={{ label: "Rascunho", variant: "secondary" }}
+        dados={{ modo: "criar" }}
         meta={<span>Pasta: {pastaNome ?? "Sem pasta"}</span>}
         acoes={
-          <SubmitButton
-            onClick={mostrarConfiguracoesAntesDeEnviar}
-            pendingLabel="Criando..."
-          >
-            Criar atividade
-          </SubmitButton>
+          <SubmitButton pendingLabel="Criando...">Criar atividade</SubmitButton>
         }
       />
 
@@ -72,17 +62,11 @@ export function NovaAtividadeForm({
         <AtividadeTabsList modo="criar" linksCount={0} />
 
         <TabsContent value="configuracoes" keepMounted className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados da atividade</CardTitle>
-              <CardDescription>
-                Título e subtítulo que o aluno vê.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AtividadeCampos autoFocus />
-            </CardContent>
-          </Card>
+          <p className="text-sm text-muted-foreground">
+            O título e o subtítulo ficam no topo da página — clique neles para
+            editar. A atividade nasce como rascunho; depois de criar, você
+            poderá publicar.
+          </p>
 
           <Card>
             <CardHeader>

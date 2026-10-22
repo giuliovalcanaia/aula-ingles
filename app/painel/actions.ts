@@ -498,29 +498,27 @@ export async function updateAtividade(
   const id = idField(formData, "id")
   if (!id) return fail("Atividade inválida.")
 
-  const titulo = field(formData, "titulo")
-  if (!titulo) return fail("Informe o título da atividade.")
+  // O cabeçalho salva título e subtítulo de forma independente: só os campos
+  // enviados são atualizados, para um não sobrescrever o outro.
+  const dados: { titulo?: string; subtitulo?: string | null } = {}
 
-  const pastaId = idField(formData, "pasta_id")
+  if (formData.has("titulo")) {
+    const titulo = field(formData, "titulo")
+    if (!titulo) return fail("Informe o título da atividade.")
+    dados.titulo = titulo
+  }
 
-  if (pastaId !== null) {
-    const { data: pasta } = await teacher.supabase
-      .from("pastas")
-      .select("id")
-      .eq("id", pastaId)
-      .is("deleted_at", null)
-      .maybeSingle()
+  if (formData.has("subtitulo")) {
+    dados.subtitulo = optionalField(formData, "subtitulo")
+  }
 
-    if (!pasta) return fail("Pasta de destino inválida.")
+  if (dados.titulo === undefined && dados.subtitulo === undefined) {
+    return fail("Nada para salvar.")
   }
 
   const { data, error } = await teacher.supabase
     .from("atividades")
-    .update({
-      titulo,
-      subtitulo: optionalField(formData, "subtitulo"),
-      pasta_id: pastaId,
-    })
+    .update(dados)
     .eq("id", id)
     .is("deleted_at", null)
     .select("id")
@@ -529,7 +527,7 @@ export async function updateAtividade(
   if (error || !data) return fail("Não foi possível salvar a atividade.")
 
   revalidatePainel(`/painel/atividades/${id}`)
-  return ok("Atividade atualizada.")
+  return { error: null }
 }
 
 export async function renameAtividade(

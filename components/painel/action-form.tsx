@@ -12,7 +12,7 @@ type ActionFormProps = {
   id?: string
   resetOnSuccess?: boolean
   onSuccess?: () => void
-  onError?: () => void
+  onError?: (error: string) => void
 }
 
 export function ActionForm({
@@ -34,7 +34,7 @@ export function ActionForm({
 
     if (state.error) {
       toast.add({ type: "error", title: state.error })
-      onError?.()
+      onError?.(state.error)
       return
     }
 

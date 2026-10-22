@@ -9,7 +9,6 @@ import {
   updateStudentProgress,
 } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
-import { ActivityForm } from "@/components/painel/activity-form"
 import { AtividadeCabecalho } from "@/components/painel/atividade-cabecalho"
 import { AtividadeTabsList } from "@/components/painel/atividade-tabs-list"
 import { LinksDraftProvider } from "@/components/painel/links-draft"
@@ -35,12 +34,6 @@ import { Label } from "@/components/ui/label"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { TabsContent } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
-
-const statusLabels: Record<string, string> = {
-  rascunho: "Rascunho",
-  publicada: "Publicada",
-  arquivada: "Arquivada",
-}
 
 const progressoLabels: Record<string, string> = {
   aberta: "Aberta",
@@ -185,11 +178,12 @@ export default async function Page({
       <div className="m-4 max-w-5xl space-y-6">
         <AtividadeCabecalho
           voltarHref={voltarHref}
-          titulo={atividade.titulo}
-          subtitulo={atividade.subtitulo}
-          badge={{
-            label: statusLabels[atividade.status] ?? atividade.status,
-            variant: publicada ? "default" : "secondary",
+          dados={{
+            modo: "editar",
+            atividadeId: atividade.id,
+            titulo: atividade.titulo,
+            subtitulo: atividade.subtitulo,
+            action: updateAtividade,
           }}
           meta={
             <>
@@ -461,17 +455,10 @@ export default async function Page({
           </TabsContent>
 
           <TabsContent value="configuracoes" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados da atividade</CardTitle>
-                <CardDescription>
-                  Título e subtítulo que o aluno vê.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ActivityForm action={updateAtividade} atividade={atividade} />
-              </CardContent>
-            </Card>
+            <p className="text-sm text-muted-foreground">
+              O título e o subtítulo desta atividade ficam no topo da página —
+              clique neles para editar.
+            </p>
 
             <Card>
               <CardHeader>
