@@ -454,6 +454,15 @@ export type Database = {
         Args: { p_atividade_id: number; p_ativa: boolean }
         Returns: undefined
       }
+      set_student_progress: {
+        Args: {
+          p_link_id: number
+          p_participacao_id: number
+          p_pontuacao: number | null
+          p_status: string
+        }
+        Returns: undefined
+      }
       trash_atividade: {
         Args: { p_atividade_id: number }
         Returns: string

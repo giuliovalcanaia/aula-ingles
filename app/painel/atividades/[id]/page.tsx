@@ -4,7 +4,6 @@ import {
   alternarAtividade,
   updateActivityPassword,
   updateAtividade,
-  updateStudentProgress,
 } from "@/app/painel/actions"
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCabecalho } from "@/components/painel/atividade-cabecalho"
@@ -16,6 +15,7 @@ import { LinksEditorTextarea } from "@/components/painel/links-editor-textarea"
 import { LinksProtectedTabs } from "@/components/painel/links-protected-tabs"
 import { LinksSaveForm } from "@/components/painel/links-save-form"
 import { PreviewActivityButton } from "@/components/painel/preview-activity-button"
+import { ProgressoAlunoForm } from "@/components/painel/progresso-aluno-form"
 import { SenhaField } from "@/components/painel/senha-field"
 import { SubmitButton } from "@/components/painel/submit-button"
 import { TrashActivityButton } from "@/components/painel/trash-activity-button"
@@ -29,18 +29,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { TabsContent } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
-
-const progressoLabels: Record<string, string> = {
-  aberta: "Aberta",
-  fazendo: "Em andamento",
-  concluida: "Concluída",
-  bloqueada: "Bloqueada",
-}
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -317,95 +307,16 @@ export default async function Page({
                                         )
 
                                       return (
-                                        <ActionForm
+                                        <ProgressoAlunoForm
                                           key={link.id}
-                                          action={updateStudentProgress}
-                                          className="flex flex-wrap items-end gap-2 rounded-lg border p-2"
-                                        >
-                                          <input
-                                            type="hidden"
-                                            name="atividade_id"
-                                            value={atividade.id}
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="participacao_id"
-                                            value={aluno.id}
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="link_id"
-                                            value={link.id}
-                                          />
-                                          <div className="min-w-40 flex-1 text-sm">
-                                            <span className="text-muted-foreground">
-                                              {index + 1}.
-                                            </span>{" "}
-                                            {link.titulo}
-                                            <span className="block text-xs text-muted-foreground">
-                                              {
-                                                progressoLabels[
-                                                  row?.status ?? "bloqueada"
-                                                ]
-                                              }
-                                            </span>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <Label
-                                              htmlFor={`status-${aluno.id}-${link.id}`}
-                                              className="text-xs"
-                                            >
-                                              Situação
-                                            </Label>
-                                            <NativeSelect
-                                              id={`status-${aluno.id}-${link.id}`}
-                                              name="status"
-                                              defaultValue={
-                                                row?.status ?? "bloqueada"
-                                              }
-                                              size="sm"
-                                              className="w-full"
-                                            >
-                                              <NativeSelectOption value="bloqueada">
-                                                Bloqueada
-                                              </NativeSelectOption>
-                                              <NativeSelectOption value="aberta">
-                                                Aberta
-                                              </NativeSelectOption>
-                                              <NativeSelectOption value="fazendo">
-                                                Em andamento
-                                              </NativeSelectOption>
-                                              <NativeSelectOption value="concluida">
-                                                Concluída
-                                              </NativeSelectOption>
-                                            </NativeSelect>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <Label
-                                              htmlFor={`nota-${aluno.id}-${link.id}`}
-                                              className="text-xs"
-                                            >
-                                              Nota
-                                            </Label>
-                                            <Input
-                                              id={`nota-${aluno.id}-${link.id}`}
-                                              name="pontuacao"
-                                              type="number"
-                                              min={0}
-                                              className="w-20"
-                                              defaultValue={
-                                                row?.pontuacao ?? ""
-                                              }
-                                              placeholder="—"
-                                            />
-                                          </div>
-                                          <SubmitButton
-                                            variant="outline"
-                                            size="sm"
-                                          >
-                                            Salvar
-                                          </SubmitButton>
-                                        </ActionForm>
+                                          atividadeId={atividade.id}
+                                          participacaoId={aluno.id}
+                                          linkId={link.id}
+                                          indice={index + 1}
+                                          titulo={link.titulo}
+                                          status={row?.status ?? "bloqueada"}
+                                          pontuacao={row?.pontuacao ?? null}
+                                        />
                                       )
                                     })}
                                   </div>

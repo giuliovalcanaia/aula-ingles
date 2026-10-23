@@ -10,7 +10,7 @@ import {
 type StudentActivityHeaderProps = {
   titulo: string
   subtitulo: string | null
-  meta: ReactNode
+  meta?: ReactNode
   concluidas: number
   total: number
 }
@@ -34,7 +34,7 @@ export function StudentActivityHeader({
       {subtitulo && (
         <p className="text-muted-foreground sm:text-base">{subtitulo}</p>
       )}
-      <p className="text-sm text-muted-foreground">{meta}</p>
+      {meta && <p className="text-sm text-muted-foreground">{meta}</p>}
       <Card className="mt-4">
         <CardHeader>
           <Progress value={progressoPercentual} className="w-full">

@@ -948,11 +948,12 @@ export async function updateStudentProgress(
     pontuacao = parsed
   }
 
-  const { error } = await teacher.supabase
-    .from("progresso_estudante")
-    .update({ status, pontuacao })
-    .eq("participacao_id", participacaoId)
-    .eq("link_id", linkId)
+  const { error } = await teacher.supabase.rpc("set_student_progress", {
+    p_participacao_id: participacaoId,
+    p_link_id: linkId,
+    p_status: status,
+    p_pontuacao: pontuacao,
+  })
 
   if (error) return fail("Não foi possível salvar o progresso.")
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { StudentActivityHeader } from "@/components/student-activity-header"
+import { StudentActivityRealtime } from "@/components/student-activity-realtime"
 import { StudentLinkList } from "@/components/student-link-list"
 import type { ActivityStatus } from "@/components/clickable-card"
 import { Card, CardDescription, CardHeader } from "@/components/ui/card"
@@ -66,11 +67,38 @@ export default async function Page({
     redirect(`/aluno?codigo=${encodeURIComponent(codigoEntrada)}`)
   }
 
+  const tempoReal = (
+    <StudentActivityRealtime
+      participacaoId={participacao.id}
+      aplicacaoId={aplicacao.id}
+    />
+  )
+
   const { data: atividade } = await supabase
     .from("atividades")
     .select("id, titulo, subtitulo, status")
     .eq("id", aplicacao.atividade_id)
     .maybeSingle()
+
+  // A entrada encerrada continua visível para o aluno (a RLS não filtra por
+  // status), então esta checagem vem antes da atividade: depois de encerrar,
+  // a atividade deixa de ser visível pela policy de SELECT.
+  if (aplicacao.status === "encerrada") {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col p-4">
+        {tempoReal}
+        <Card>
+          <CardHeader>
+            <p className="font-medium">Atividade encerrada.</p>
+            <CardDescription>
+              O professor encerrou esta atividade. Fale com ele para mais
+              informações.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
 
   if (!atividade) {
     return (
@@ -90,25 +118,10 @@ export default async function Page({
     )
   }
 
-  if (aplicacao.status === "encerrada") {
-    return (
-      <div className="mx-auto flex max-w-4xl flex-col p-4">
-        <Card>
-          <CardHeader>
-            <p className="font-medium">Atividade encerrada.</p>
-            <CardDescription>
-              O professor encerrou esta atividade. Fale com ele para mais
-              informações.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
-
   if (atividade.status !== "publicada") {
     return (
       <div className="mx-auto flex max-w-4xl flex-col p-4">
+        {tempoReal}
         <Card>
           <CardHeader>
             <p className="font-medium">Atividade indisponível.</p>
@@ -149,21 +162,19 @@ export default async function Page({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col space-y-4">
+      {tempoReal}
       <StudentActivityHeader
-        titulo={atividade.titulo}
+        titulo={`${atividade.titulo} - ${participacao.nome}`}
         subtitulo={atividade.subtitulo}
         meta={
-          <>
-            Aluno: {participacao.nome}
-            {aplicacao.data && (
-              <>
-                {" · "}Data da aula:{" "}
-                {new Intl.DateTimeFormat("pt-BR", {
-                  dateStyle: "short",
-                }).format(new Date(`${aplicacao.data}T12:00:00`))}
-              </>
-            )}
-          </>
+          aplicacao.data && (
+            <>
+              Data da aula:{" "}
+              {new Intl.DateTimeFormat("pt-BR", {
+                dateStyle: "short",
+              }).format(new Date(`${aplicacao.data}T12:00:00`))}
+            </>
+          )
         }
         concluidas={concluidas}
         total={items.length}
