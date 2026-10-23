@@ -189,7 +189,7 @@ export async function lookupLinkPreview(
           accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
           "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
           "user-agent":
-            "Mozilla/5.0 (compatible; AulaInglesLinkPreview/1.0; +https://example.com)",
+            "Mozilla/5.0 (compatible; TrilhaLinkPreview/1.0; +https://example.com)",
         },
       })
 

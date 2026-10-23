@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Geist, Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
@@ -12,6 +13,12 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+export const metadata: Metadata = {
+  title: "Trilha",
+  description:
+    "Monte atividades em sequência, compartilhe o código de entrada e acompanhe o progresso dos alunos em tempo real.",
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       suppressHydrationWarning
       className={cn(
         "antialiased",

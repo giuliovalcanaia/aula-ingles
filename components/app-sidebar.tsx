@@ -45,7 +45,7 @@ export function AppSidebar({
 
   const teams = [
     {
-      name: "GV Sistemas",
+      name: "Trilha",
       logo: <GalleryVerticalEndIcon />,
       plan: "Professor",
     },
