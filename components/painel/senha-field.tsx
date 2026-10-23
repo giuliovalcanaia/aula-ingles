@@ -3,13 +3,14 @@
 import { useState } from "react"
 import { DicesIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import { cn } from "@/lib/utils"
 
 /**
  * Palavras sem acento e com 4 letras ou mais: fáceis de ditar em sala e já
@@ -87,7 +88,13 @@ type SenhaFieldProps = {
   initialValue?: string
 }
 
-/** Senha de liberação com sorteio de palavras e alternância de visibilidade. */
+/**
+ * Senha de liberação com sorteio de palavras e alternância de visibilidade.
+ *
+ * Não usa `type="password"` de propósito: o Chrome interpretaria o campo como
+ * credencial do site e ofereceria salvar/atualizar a senha do professor. O
+ * texto é mascarado via `-webkit-text-security` quando oculto.
+ */
 export function SenhaField({
   id = "senha",
   name = "senha",
@@ -109,12 +116,15 @@ export function SenhaField({
         <InputGroupInput
           id={id}
           name={name}
-          type={visivel ? "text" : "password"}
+          type="text"
           value={senha}
           onChange={(event) => setSenha(event.target.value)}
           minLength={4}
           placeholder="Mínimo de 4 caracteres"
-          autoComplete="new-password"
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
+          className={cn(!visivel && "[-webkit-text-security:disc]")}
           required
         />
         <InputGroupAddon align="inline-end">
@@ -131,10 +141,6 @@ export function SenhaField({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      <FieldDescription>
-        O aluno digita esta senha para concluir cada link. O sorteio escolhe uma
-        palavra fácil de ditar.
-      </FieldDescription>
     </Field>
   )
 }

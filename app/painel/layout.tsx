@@ -41,6 +41,7 @@ export default async function PainelLayout({
     { data: pastas },
     { count: pastasNaLixeira },
     { count: atividadesNaLixeira },
+    { data: atividadePastas },
   ] = await Promise.all([
     supabase
       .from("pastas")
@@ -55,6 +56,11 @@ export default async function PainelLayout({
       .from("atividades")
       .select("id", { count: "exact", head: true })
       .not("deleted_at", "is", null),
+    supabase
+      .from("atividades")
+      .select("id, pasta_id")
+      .is("deleted_at", null)
+      .not("pasta_id", "is", null),
   ])
 
   const email =
@@ -67,6 +73,7 @@ export default async function PainelLayout({
           professor={professor}
           email={email}
           pastas={pastas ?? []}
+          atividadePastas={atividadePastas ?? []}
           trashCount={(pastasNaLixeira ?? 0) + (atividadesNaLixeira ?? 0)}
         />
         <SidebarInset>

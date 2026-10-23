@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
@@ -10,11 +12,15 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon } from "lucide-react"
+import { GalleryVerticalEndIcon, Trash2Icon } from "lucide-react"
 
-import { type PastaRow } from "@/lib/pastas"
+import { type AtividadePastaRow, type PastaRow } from "@/lib/pastas"
 
 type Professor = {
   id: number
@@ -25,14 +31,18 @@ export function AppSidebar({
   professor,
   email,
   pastas,
+  atividadePastas,
   trashCount,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   professor: Professor
   email?: string
   pastas: PastaRow[]
+  atividadePastas: AtividadePastaRow[]
   trashCount: number
 }) {
+  const pathname = usePathname()
+
   const teams = [
     {
       name: "GV Sistemas",
@@ -47,9 +57,24 @@ export function AppSidebar({
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects pastas={pastas} trashCount={trashCount} />
+        <NavProjects pastas={pastas} atividadePastas={atividadePastas} />
       </SidebarContent>
       <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              isActive={pathname.startsWith("/painel/lixeira")}
+              tooltip="Lixeira"
+              render={<Link href="/painel/lixeira" />}
+            >
+              <Trash2Icon />
+              <span>Lixeira</span>
+            </SidebarMenuButton>
+            {trashCount > 0 && (
+              <SidebarMenuBadge>{trashCount}</SidebarMenuBadge>
+            )}
+          </SidebarMenuItem>
+        </SidebarMenu>
         <NavUser
           user={{
             name: professor.nome,

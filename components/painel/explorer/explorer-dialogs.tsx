@@ -83,6 +83,7 @@ export function NewFolderDialog({
                 id="nova-pasta-nome"
                 name="nome"
                 placeholder="Ex.: Aulas de 2026"
+                autoComplete="off"
                 autoFocus
                 required
               />
@@ -135,6 +136,7 @@ export function RenameDialog({
                 id="renomear-nome"
                 name={pasta ? "nome" : "titulo"}
                 defaultValue={nome}
+                autoComplete="off"
                 autoFocus
                 required
               />

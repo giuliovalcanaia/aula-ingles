@@ -1,46 +1,69 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
-import {
-  ChevronRightIcon,
-  FolderIcon,
-  HouseIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { ChevronRightIcon, FolderIcon, HouseIcon } from "lucide-react"
 
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
   flattenPastasVisiveis,
   pastaBreadcrumb,
+  type AtividadePastaRow,
   type PastaRow,
 } from "@/lib/pastas"
 import { cn } from "@/lib/utils"
 
 export function NavProjects({
   pastas,
-  trashCount,
+  atividadePastas,
 }: {
   pastas: PastaRow[]
-  trashCount: number
+  atividadePastas: AtividadePastaRow[]
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [expandidas, setExpandidas] = useState<Set<number>>(new Set())
-  const [homeAberta, setHomeAberta] = useState(true)
+  const searchParams = useSearchParams()
+
+  const pastaDaAtividade = useMemo(
+    () =>
+      new Map(
+        atividadePastas.map((atividade) => [atividade.id, atividade.pasta_id])
+      ),
+    [atividadePastas]
+  )
 
   const pastaAtualId = useMemo(() => {
-    const match = pathname.match(/^\/painel\/pastas\/(\d+)/)
-    return match ? Number(match[1]) : null
-  }, [pathname])
+    const pastaMatch = pathname.match(/^\/painel\/pastas\/(\d+)/)
+    if (pastaMatch) return Number(pastaMatch[1])
+
+    // Numa atividade, mantém aberto o caminho da pasta que a contém.
+    const atividadeMatch = pathname.match(/^\/painel\/atividades\/(\d+)/)
+    if (atividadeMatch) {
+      return pastaDaAtividade.get(Number(atividadeMatch[1])) ?? null
+    }
+
+    // Na criação, a pasta de destino vem em ?pasta=<id>.
+    if (pathname === "/painel/atividades/nova") {
+      const pastaId = Number(searchParams.get("pasta"))
+      return Number.isInteger(pastaId) && pastaId > 0 ? pastaId : null
+    }
+
+    return null
+  }, [pathname, pastaDaAtividade, searchParams])
+
+  // Já começa com o caminho da pasta atual aberto, sem um recolhimento inicial
+  // quando a página é carregada direto (por exemplo, ao abrir uma atividade).
+  const [expandidas, setExpandidas] = useState<Set<number>>(
+    () =>
+      new Set(pastaBreadcrumb(pastas, pastaAtualId).map((pasta) => pasta.id))
+  )
+  const [homeAberta, setHomeAberta] = useState(true)
 
   const pastasRef = useRef(pastas)
   useEffect(() => {
@@ -149,7 +172,7 @@ export function NavProjects({
                 <SidebarMenuButton
                   type="button"
                   data-nav-href={url}
-                  isActive={pathname === url}
+                  isActive={pastaAtualId === pasta.id}
                   tooltip={pasta.nome}
                   aria-expanded={temFilhos ? aberta : undefined}
                   style={{
@@ -191,24 +214,6 @@ export function NavProjects({
               </SidebarMenuItem>
             )
           })}
-        </SidebarMenu>
-      </SidebarGroup>
-
-      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={pathname.startsWith("/painel/lixeira")}
-              tooltip="Lixeira"
-              render={<Link href="/painel/lixeira" />}
-            >
-              <Trash2Icon />
-              <span>Lixeira</span>
-            </SidebarMenuButton>
-            {trashCount > 0 && (
-              <SidebarMenuBadge>{trashCount}</SidebarMenuBadge>
-            )}
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>
     </>

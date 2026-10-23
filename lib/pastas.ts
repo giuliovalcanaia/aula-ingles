@@ -4,6 +4,12 @@ export type PastaRow = {
   parent_id: number | null
 }
 
+/** Vínculo mínimo de uma atividade com a pasta que a contém. */
+export type AtividadePastaRow = {
+  id: number
+  pasta_id: number | null
+}
+
 export type PastaNode = {
   id: number
   nome: string
