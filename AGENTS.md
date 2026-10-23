@@ -15,6 +15,33 @@
 - `npm run lint` is currently broken before linting any file: ESLint 10.10 crashes with `eslint-config-next`'s `eslint-plugin-react` 7.37.5 (supports ESLint <= 9). Do not treat this as a regression in your change; verify with `typecheck` + `build`. Fixing it means pinning `eslint` to `^9`, not changing app code.
 - There is no test runner or test directory. Do not invent Jest/Vitest/Playwright commands.
 
+## Environments
+
+- **Local (desenvolvimento)**: stack completo do Supabase via CLI + Docker (`npx supabase start`): API em `54321`, banco em `54322`, Studio em `54323`. O app roda em `localhost:5151` (`npm run dev`). `.env.local` aponta para esse stack.
+- **Produção**: projeto hospedado `fmhzbhiithwmbjfvblhw` (São Paulo, `sa-east-1`, Postgres 17), usado pelo deploy da Vercel a partir do branch `main`. As chaves de produção ficam só na Vercel e no gerenciador de senhas — nunca em arquivo versionado nem em `.env.local`.
+- **Staging (preview)**: segundo projeto hospedado, usado pelos preview deployments da Vercel do branch `dev`. Ainda não foi criado.
+
+Branches: `main` = produção (Production Branch na Vercel), `dev` = desenvolvimento (preview), `legacy` = app antigo em JS puro, arquivado. Trabalhe em `dev`; quando estiver estável, `git switch main && git merge --ff-only dev && git push`.
+
+### Banco local
+
+- `npx supabase start` sobe o stack; `npx supabase db reset` recria o schema aplicando todas as migrations e roda `supabase/seed.sql`.
+- `supabase/config.toml` já vem com `enable_anonymous_sign_ins = true` e `anonymous_users = 300`. O login anônimo precisa estar ligado, senão `signInAnonymously()` falha com `anonymous_provider_disabled`.
+- O seed cria um professor de teste e uma atividade publicada com código de entrada; os valores estão nos comentários do topo de `supabase/seed.sql` (professor `professor@trilha.test` / `senha123`, entrada `TESTE1`, senha de liberação `aula123`).
+- `npx supabase status` imprime URL e chaves do stack local; `npx supabase stop` encerra os containers (o banco local é preservado entre execuções).
+- **Nunca aponte `.env.local` para o projeto de produção**: o ambiente local passaria a gravar dados reais.
+
+### Migrations e deploy do banco
+
+1. `npx supabase migration new <nome>` cria o arquivo com o timestamp correto.
+2. `npx supabase db reset` para validar localmente.
+3. Commit em `dev` e merge em `main`.
+4. `npx supabase link --project-ref fmhzbhiithwmbjfvblhw` (uma vez; pede a senha do banco).
+5. `npx supabase migration list --linked` e `npx supabase db push --dry-run` antes do `npx supabase db push`.
+6. Regenere `lib/supabase/database.types.ts` pelo MCP/dashboard depois do push.
+
+Nunca rode `db reset` contra o projeto remoto. Migrations aplicadas via MCP recebem o timestamp atual como versão — renomeie o arquivo local para casar, ou prefira o fluxo acima.
+
 ## Stack quirks
 
 - Next.js 16.3.4 App Router + React 19.2.8. Before writing Next-specific code, read the bundled docs under `node_modules/next/dist/docs/`; v16 APIs and conventions differ from older training data.
@@ -30,7 +57,7 @@
 - Auth is wired: teacher e-mail/password via `/signup` + `/login`, and students through Supabase anonymous sign-ins.
 - E-mail confirmation is **off** in the Supabase project (built-in mailer is limited to 2 e-mails/hour, no custom SMTP): `signUp` returns a session and `/signup` goes straight to `/painel`. `/auth/confirm` and `/auth/error` are dormant; re-enable confirmation and the no-session branch in `components/signup-form.tsx` together if that ever changes.
 - The Supabase schema is in `snake_case` (`professores`, `turmas`, `pastas`, `atividades`, `links`, `estudantes`, `aplicacoes`, `participacoes`, `progresso_estudante`, `atividade_senhas`) with RLS on every table. Migrations live in `supabase/migrations/`; the plan that produced the first ones is `/home/giulio/.opencode/plan/supabase-auth-plan.md`.
-- The Supabase project is in **São Paulo (`sa-east-1`)** (`fmhzbhiithwmbjfvblhw`). Apply migrations with `npx supabase db push --db-url <session-pooler-url>`; `supabase/config.toml` is committed for the CLI. The Supabase MCP in this environment points at this project, so `apply_migration`, `execute_sql` and `generate_typescript_types` can be used. Migrations applied via MCP get the current timestamp as version — rename the local file to match the recorded version so `db push` stays in sync.
+- The Supabase project is in **São Paulo (`sa-east-1`)** (`fmhzbhiithwmbjfvblhw`); `supabase/config.toml` is committed for the CLI. The Supabase MCP in this environment points at this project, so `apply_migration`, `execute_sql` and `generate_typescript_types` can be used. Fluxo de migrations, branches e ambientes: ver **Environments** acima.
 - Supabase clients: `lib/supabase/client.ts` (browser), `lib/supabase/server.ts` (`await cookies()`), `lib/supabase/proxy.ts` + root `proxy.ts` (session refresh, Next 16 proxy convention). Use `getClaims()` on the server, never `getSession()`.
 - O login do professor expira **24h após o início da sessão** (contagem fixa, não por inatividade). A checagem fica em `lib/supabase/proxy.ts`, só em rotas `/painel*` e `/previa*`: compara `now()` com `public.session_started_at()` (RPC `security definer` que lê `auth.sessions.created_at` da própria sessão, via `session_id` do JWT) e, ao expirar, faz `signOut()` + limpa os cookies `sb-*` + redireciona para `/login?expirado=1`. Se a RPC falhar, é fail-open. Sessões anônimas dos alunos não expiram — não use `[auth.sessions] timebox` nem `config.toml`, que valem para todas as sessões (e, no caso do aluno, um novo login anônimo cria outro `estudante`/`participacao`, zerando o progresso).
 - Authorization helpers are in the `private` schema (`private.current_professor_id()`, `private.professor_owns_*`, `private.estudante_participa_*`, etc.). The ownership helpers are `security definer` and exist to avoid RLS recursion between `atividades`, `aplicacoes`, `participacoes` and `progresso_estudante` — policies must use them instead of joining those tables directly. Student writes go through the `join_activity`, `update_my_progress` and `complete_link` RPCs. Teacher writes go through `set_activity_password`, `set_student_progress` and `reorder_links` plus direct table updates allowed by RLS (including saving links in bulk). The join code is checked on `/` through `validate_join_code`, granted to `anon`.
@@ -46,7 +73,7 @@
 - A senha de liberação também é gravada em texto em `atividade_senhas.senha_texto` (a validação continua usando `senha_hash`), para o professor poder consultá-la na aba Configurações. A policy de `atividade_senhas` restringe a leitura ao dono da atividade; atividades criadas antes da migration `20261022194512_atividade_senha_visivel.sql` ficam com `senha_texto = null` e precisam definir uma nova senha para exibi-la. `duplicate_atividade`/`duplicate_pasta` copiam a coluna.
 - Student progress: clicking a link marks it `fazendo` via `update_my_progress`; to finish it the student enters the activity password, and `complete_link` marks the current link `concluida`, opens the next one and sets `participacoes.concluido_em` when everything is done. Teachers can override status and set `pontuacao` per participation/link through `set_student_progress`. Na aba Alunos, a situação é salva assim que o select muda; salvar uma nota não vazia conclui o link e abre a próxima etapa `bloqueada`, como no fluxo do aluno. `links.ordem` is unique per activity and reordered only through `reorder_links`.
 - A tela do aluno também escuta Realtime: `components/student-activity-realtime.tsx` assina `progresso_estudante` (filtrado por `participacao_id`) e `aplicacoes` (filtrado por `id`) e chama `router.refresh()`. Assim, mudanças de status/nota feitas pelo professor e o encerramento/reabertura da atividade aparecem sem recarregar a página. As tabelas estão na publication `supabase_realtime`.
-- Anonymous sign-ins must stay enabled in the Supabase dashboard (Authentication > Sign In / Providers), otherwise `signInAnonymously()` fails with `anonymous_provider_disabled`.
+- Anonymous sign-ins must stay enabled in every Supabase project (dashboard: Authentication > Sign In / Providers; local: `enable_anonymous_sign_ins` em `supabase/config.toml`), otherwise `signInAnonymously()` fails with `anonymous_provider_disabled`. O rate limit padrão (30 logins anônimos por hora por IP) estoura com uma turma inteira no mesmo Wi-Fi — suba em Authentication > Rate Limits.
 - User-facing copy is Brazilian Portuguese; keep new UI text in pt-BR.
 - Progress statuses are `"aberta" | "fazendo" | "concluida" | "bloqueada"` in `components/clickable-card.tsx`. Activity status is `"rascunho" | "publicada" | "arquivada"` on `atividades.status` and application status is `"aberta" | "encerrada"` on `aplicacoes.status`; os dois andam juntos (rascunho ↔ encerrada, publicada ↔ aberta) e o valor `arquivada` não é usado pelo app.
 - Dark mode is class-based via `next-themes`; pressing `d` outside form fields toggles it (`components/theme-provider.tsx`).
