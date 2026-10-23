@@ -9,6 +9,8 @@ import {
 import { ActionForm } from "@/components/painel/action-form"
 import { AtividadeCabecalho } from "@/components/painel/atividade-cabecalho"
 import { AtividadeTabsList } from "@/components/painel/atividade-tabs-list"
+import { AtividadeTempoReal } from "@/components/painel/atividade-tempo-real"
+import { LinkAtividadeCopiavel } from "@/components/painel/link-atividade-copiavel"
 import { LinksDraftProvider } from "@/components/painel/links-draft"
 import { LinksEditorTextarea } from "@/components/painel/links-editor-textarea"
 import { LinksProtectedTabs } from "@/components/painel/links-protected-tabs"
@@ -173,6 +175,7 @@ export default async function Page({
       initialValue={(links ?? []).map((link) => link.href).join("\n")}
       initialTab={abaInicial}
     >
+      <AtividadeTempoReal atividadeId={atividade.id} />
       <div className="m-4 max-w-5xl space-y-6">
         <AtividadeCabecalho
           voltarHref={voltarHref}
@@ -231,6 +234,15 @@ export default async function Page({
                             <Badge variant={ativa ? "default" : "secondary"}>
                               {ativa ? "Ativa" : "Encerrada"}
                             </Badge>
+                            {ativa && (
+                              <Badge variant="outline">
+                                <span
+                                  className="size-1.5 rounded-full bg-emerald-500"
+                                  aria-hidden
+                                />
+                                Ao vivo
+                              </Badge>
+                            )}
                           </div>
                           <CardDescription>
                             Criada em {formatDate(aplicacao.data)} ·{" "}
@@ -242,9 +254,7 @@ export default async function Page({
                           </CardDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm font-semibold">
-                            {aplicacao.codigo}
-                          </span>
+                          <LinkAtividadeCopiavel codigo={aplicacao.codigo} />
                           <ActionForm action={alternarAtividade}>
                             <input
                               type="hidden"
