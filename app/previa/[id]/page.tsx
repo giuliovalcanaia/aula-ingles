@@ -11,8 +11,8 @@ import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 
 const statusLabels: Record<string, string> = {
-  rascunho: "Rascunho",
-  publicada: "Publicada",
+  rascunho: "Encerrada",
+  publicada: "Ativa",
   arquivada: "Arquivada",
 }
 
@@ -117,10 +117,10 @@ export default async function Page({
         {!publicada && (
           <Card className="mx-4 mt-4 mb-0">
             <CardHeader>
-              <p className="font-medium">Esta atividade não está publicada.</p>
+              <p className="font-medium">Esta atividade está encerrada.</p>
               <CardDescription>
-                Os alunos só conseguem entrar depois que você publicar a
-                atividade.
+                Os alunos não conseguem entrar enquanto ela estiver encerrada.
+                Reabra a atividade na aba Alunos.
               </CardDescription>
             </CardHeader>
           </Card>

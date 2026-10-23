@@ -90,22 +90,6 @@ export default async function Page({
     )
   }
 
-  if (atividade.status !== "publicada") {
-    return (
-      <div className="mx-auto flex max-w-4xl flex-col p-4">
-        <Card>
-          <CardHeader>
-            <p className="font-medium">Atividade indisponível.</p>
-            <CardDescription>
-              O professor fechou esta atividade. Fale com ele para mais
-              informações.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
-
   if (aplicacao.status === "encerrada") {
     return (
       <div className="mx-auto flex max-w-4xl flex-col p-4">
@@ -114,6 +98,22 @@ export default async function Page({
             <p className="font-medium">Atividade encerrada.</p>
             <CardDescription>
               O professor encerrou esta atividade. Fale com ele para mais
+              informações.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  if (atividade.status !== "publicada") {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col p-4">
+        <Card>
+          <CardHeader>
+            <p className="font-medium">Atividade indisponível.</p>
+            <CardDescription>
+              O professor fechou esta atividade. Fale com ele para mais
               informações.
             </CardDescription>
           </CardHeader>

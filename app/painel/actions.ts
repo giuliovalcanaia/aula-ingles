@@ -484,6 +484,17 @@ export async function createAtividade(
     return fail("Não foi possível criar o código de entrada.")
   }
 
+  // A atividade já nasce ativa: publicada e com a entrada aberta.
+  const { error: publicacaoError } = await teacher.supabase
+    .from("atividades")
+    .update({ status: "publicada", publicada_em: new Date().toISOString() })
+    .eq("id", atividade.id)
+
+  if (publicacaoError) {
+    await teacher.supabase.from("atividades").delete().eq("id", atividade.id)
+    return fail("Não foi possível publicar a atividade.")
+  }
+
   revalidatePainel()
   redirect(`/painel/atividades/${atividade.id}`)
 }
@@ -597,85 +608,42 @@ export async function updateActivityPassword(
   return ok("Senha atualizada.")
 }
 
-export async function publishAtividade(
+export async function alternarAtividade(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
   const id = idField(formData, "id")
   if (!id) return fail("Atividade inválida.")
 
-  const [{ data: senha }, { count: totalLinks }] = await Promise.all([
-    teacher.supabase
-      .from("atividade_senhas")
-      .select("atividade_id")
-      .eq("atividade_id", id)
-      .maybeSingle(),
-    teacher.supabase
-      .from("links")
-      .select("id", { count: "exact", head: true })
-      .eq("atividade_id", id),
-  ])
-
-  if (!senha) return fail("Defina a senha da atividade antes de publicar.")
-  if ((totalLinks ?? 0) === 0) {
-    return fail("Adicione pelo menos um link antes de publicar.")
-  }
-
-  const { data, error } = await teacher.supabase
-    .from("atividades")
-    .update({ status: "publicada", publicada_em: new Date().toISOString() })
-    .eq("id", id)
-    .is("deleted_at", null)
-    .select("id")
-    .maybeSingle()
-
-  if (error || !data) return fail("Não foi possível publicar a atividade.")
-
-  revalidatePainel(`/painel/atividades/${id}`)
-  return ok("Atividade publicada.")
+  return setAtividadeAtiva(id, field(formData, "ativa") === "1")
 }
 
-export async function unpublishAtividade(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  const id = idField(formData, "id")
-  if (!id) return fail("Atividade inválida.")
-
-  const { data, error } = await teacher.supabase
-    .from("atividades")
-    .update({ status: "rascunho", publicada_em: null })
-    .eq("id", id)
-    .is("deleted_at", null)
-    .select("id")
-    .maybeSingle()
-
-  if (error || !data) return fail("Não foi possível despublicar a atividade.")
-
-  revalidatePainel(`/painel/atividades/${id}`)
-  return ok("Atividade voltou para rascunho.")
-}
-
-export async function setAtividadePublicada(
+export async function setAtividadeAtiva(
   atividadeId: number,
-  publicada: boolean
+  ativa: boolean
 ): Promise<ActionResult> {
+  const teacher = await getTeacher()
+  if (!teacher) return fail("Sessão expirada. Entre novamente.")
+
   if (!Number.isInteger(atividadeId) || atividadeId <= 0) {
     return fail("Atividade inválida.")
   }
 
-  const formData = new FormData()
-  formData.set("id", String(atividadeId))
+  const { error } = await teacher.supabase.rpc("set_atividade_ativa", {
+    p_atividade_id: atividadeId,
+    p_ativa: ativa,
+  })
 
-  return publicada
-    ? publishAtividade({ error: null }, formData)
-    : unpublishAtividade({ error: null }, formData)
+  if (error) {
+    return fail(
+      ativa
+        ? "Não foi possível reabrir a atividade."
+        : "Não foi possível encerrar a atividade."
+    )
+  }
+
+  revalidatePainel(`/painel/atividades/${atividadeId}`)
+  return ok(ativa ? "Atividade reaberta." : "Atividade encerrada.")
 }
 
 export async function trashAtividade(
@@ -798,33 +766,6 @@ export async function emptyTrash(
 // ---------------------------------------------------------
 // Entrada da atividade (aplicação com o código do aluno)
 // ---------------------------------------------------------
-
-export async function setAplicacaoStatus(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const teacher = await getTeacher()
-  if (!teacher) return fail("Sessão expirada. Entre novamente.")
-
-  const id = idField(formData, "id")
-  const atividadeId = idField(formData, "atividade_id")
-  const status = field(formData, "status")
-
-  if (!id || !atividadeId) return fail("Entrada inválida.")
-  if (status !== "aberta" && status !== "encerrada") {
-    return fail("Situação inválida.")
-  }
-
-  const { error } = await teacher.supabase
-    .from("aplicacoes")
-    .update({ status })
-    .eq("id", id)
-
-  if (error) return fail("Não foi possível alterar a entrada.")
-
-  revalidatePainel(`/painel/atividades/${atividadeId}`)
-  return ok(status === "encerrada" ? "Entrada encerrada." : "Entrada reaberta.")
-}
 
 // ---------------------------------------------------------
 // Links

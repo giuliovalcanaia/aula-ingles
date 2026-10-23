@@ -10,7 +10,7 @@ import {
   duplicateAtividade,
   duplicatePasta,
   moveItem,
-  setAtividadePublicada,
+  setAtividadeAtiva,
   type ActionResult,
 } from "@/app/painel/actions"
 import {
@@ -296,9 +296,9 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
     )
   }
 
-  function alternarPublicacao(item: ExplorerItem) {
+  function alternarAtiva(item: ExplorerItem) {
     if (isPasta(item)) return
-    executar(() => setAtividadePublicada(item.id, item.status !== "publicada"))
+    executar(() => setAtividadeAtiva(item.id, item.status !== "publicada"))
   }
 
   async function copiarCodigo(codigo: string) {
@@ -471,7 +471,7 @@ export function ExplorerPage({ data }: { data: ExplorerData }) {
               onRename={() => setDialog({ kind: "renomear", item })}
               onDuplicate={() => duplicar(item)}
               onMove={() => setDialog({ kind: "mover", item })}
-              onTogglePublish={() => alternarPublicacao(item)}
+              onToggleAtiva={() => alternarAtiva(item)}
               onCopyCode={(codigo) => {
                 void copiarCodigo(codigo)
               }}

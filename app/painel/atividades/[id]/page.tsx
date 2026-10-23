@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation"
 
 import {
-  publishAtividade,
-  setAplicacaoStatus,
-  unpublishAtividade,
+  alternarAtividade,
   updateActivityPassword,
   updateAtividade,
   updateStudentProgress,
@@ -193,28 +191,11 @@ export default async function Page({
             </>
           }
           acoes={
-            <>
-              {publicada ? (
-                <ActionForm action={unpublishAtividade}>
-                  <input type="hidden" name="id" value={atividade.id} />
-                  <SubmitButton variant="outline" pendingLabel="Salvando...">
-                    Voltar para rascunho
-                  </SubmitButton>
-                </ActionForm>
-              ) : (
-                <ActionForm action={publishAtividade}>
-                  <input type="hidden" name="id" value={atividade.id} />
-                  <SubmitButton pendingLabel="Publicando...">
-                    Publicar
-                  </SubmitButton>
-                </ActionForm>
-              )}
-              <TrashActivityButton
-                id={atividade.id}
-                nome={atividade.titulo}
-                redirectTo={voltarHref}
-              />
-            </>
+            <TrashActivityButton
+              id={atividade.id}
+              nome={atividade.titulo}
+              redirectTo={voltarHref}
+            />
           }
         />
 
@@ -234,6 +215,7 @@ export default async function Page({
               aplicacoes.map((aplicacao, index) => {
                 const alunos = participacoesPorAplicacao.get(aplicacao.id) ?? []
                 const aberta = aplicacao.status === "aberta"
+                const ativa = publicada && aberta
 
                 return (
                   <Card key={aplicacao.id}>
@@ -246,41 +228,42 @@ export default async function Page({
                                 ? `Entrada ${index + 1}`
                                 : "Código de entrada"}
                             </CardTitle>
-                            <Badge variant={aberta ? "default" : "secondary"}>
-                              {aberta ? "Aberta" : "Encerrada"}
+                            <Badge variant={ativa ? "default" : "secondary"}>
+                              {ativa ? "Ativa" : "Encerrada"}
                             </Badge>
                           </div>
                           <CardDescription>
                             Criada em {formatDate(aplicacao.data)} ·{" "}
                             {alunos.length} aluno(s)
                           </CardDescription>
+                          <CardDescription>
+                            Encerrar a atividade invalida este código e a tira
+                            do ar para os alunos.
+                          </CardDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm font-semibold">
                             {aplicacao.codigo}
                           </span>
-                          <ActionForm action={setAplicacaoStatus}>
+                          <ActionForm action={alternarAtividade}>
                             <input
                               type="hidden"
                               name="id"
-                              value={aplicacao.id}
-                            />
-                            <input
-                              type="hidden"
-                              name="atividade_id"
                               value={atividade.id}
                             />
                             <input
                               type="hidden"
-                              name="status"
-                              value={aberta ? "encerrada" : "aberta"}
+                              name="ativa"
+                              value={ativa ? "0" : "1"}
                             />
                             <SubmitButton
-                              variant="outline"
+                              variant={ativa ? "outline" : "default"}
                               size="sm"
                               pendingLabel="Salvando..."
                             >
-                              {aberta ? "Encerrar" : "Reabrir"}
+                              {ativa
+                                ? "Encerrar atividade"
+                                : "Reabrir atividade"}
                             </SubmitButton>
                           </ActionForm>
                         </div>

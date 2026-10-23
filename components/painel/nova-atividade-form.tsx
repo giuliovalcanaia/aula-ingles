@@ -64,8 +64,8 @@ export function NovaAtividadeForm({
         <TabsContent value="configuracoes" keepMounted className="space-y-4">
           <p className="text-sm text-muted-foreground">
             O título e o subtítulo ficam no topo da página — clique neles para
-            editar. A atividade nasce como rascunho; depois de criar, você
-            poderá publicar.
+            editar. A atividade já nasce ativa, com o código de entrada aberto.
+            Para tirá-la do ar depois, use “Encerrar atividade” na aba Alunos.
           </p>
 
           <Card>

@@ -43,8 +43,8 @@ import {
 import { cn } from "@/lib/utils"
 
 const statusLabels: Record<string, string> = {
-  rascunho: "Rascunho",
-  publicada: "Publicada",
+  rascunho: "Encerrada",
+  publicada: "Ativa",
   arquivada: "Arquivada",
 }
 
@@ -69,7 +69,7 @@ type ExplorerItemProps = {
   onRename: () => void
   onDuplicate: () => void
   onMove: () => void
-  onTogglePublish: () => void
+  onToggleAtiva: () => void
   onCopyCode: (codigo: string) => void
   onTrash: () => void
   onDragStart: (event: React.DragEvent, item: ExplorerItem) => void
@@ -93,7 +93,7 @@ export function ExplorerItemView({
   onRename,
   onDuplicate,
   onMove,
-  onTogglePublish,
+  onToggleAtiva,
   onCopyCode,
   onTrash,
   onDragStart,
@@ -181,10 +181,10 @@ export function ExplorerItemView({
   if (!pasta) {
     actions.push({
       kind: "item",
-      key: "publicar",
-      label: publicada ? "Voltar para rascunho" : "Publicar",
+      key: "alternar-ativa",
+      label: publicada ? "Encerrar atividade" : "Reabrir atividade",
       icon: publicada ? <EyeOffIcon /> : <EyeIcon />,
-      onSelect: onTogglePublish,
+      onSelect: onToggleAtiva,
     })
 
     if (codigos.length === 1) {

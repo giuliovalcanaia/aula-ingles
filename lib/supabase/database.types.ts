@@ -450,6 +450,10 @@ export type Database = {
         Args: { p_atividade_id: number; p_senha: string }
         Returns: undefined
       }
+      set_atividade_ativa: {
+        Args: { p_atividade_id: number; p_ativa: boolean }
+        Returns: undefined
+      }
       trash_atividade: {
         Args: { p_atividade_id: number }
         Returns: string
