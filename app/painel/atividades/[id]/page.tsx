@@ -68,7 +68,7 @@ export default async function Page({
 }) {
   const [{ id }, { aba }] = await Promise.all([params, searchParams])
   const atividadeId = Number(id)
-  const abaInicial = aba === "links" || aba === "alunos" ? aba : "configuracoes"
+  const abaInicial = aba === "alunos" ? aba : "configuracoes"
 
   if (!Number.isInteger(atividadeId) || atividadeId <= 0) notFound()
 
@@ -203,11 +203,7 @@ export default async function Page({
         />
 
         <LinksProtectedTabs className="gap-4">
-          <AtividadeTabsList
-            modo="editar"
-            linksCount={(links ?? []).length}
-            alunosCount={totalAlunos}
-          />
+          <AtividadeTabsList modo="editar" alunosCount={totalAlunos} />
 
           <TabsContent value="alunos" className="space-y-3">
             {!aplicacoes || aplicacoes.length === 0 ? (
@@ -426,7 +422,12 @@ export default async function Page({
             )}
           </TabsContent>
 
-          <TabsContent value="links" keepMounted>
+          <TabsContent value="configuracoes" className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              O título e o subtítulo desta atividade ficam no topo da página —
+              clique neles para editar.
+            </p>
+
             <Card>
               <CardHeader>
                 <CardTitle>Links</CardTitle>
@@ -445,13 +446,6 @@ export default async function Page({
                 <LinksEditorTextarea />
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="configuracoes" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              O título e o subtítulo desta atividade ficam no topo da página —
-              clique neles para editar.
-            </p>
 
             <Card>
               <CardHeader>

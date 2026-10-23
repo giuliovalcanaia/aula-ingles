@@ -34,7 +34,7 @@ type LinksDraftProviderProps = {
   children: ReactNode
 }
 
-/** Rascunho da lista de links compartilhado pelo textarea e pela aba de links. */
+/** Rascunho da lista de links compartilhado pelo textarea e pelo card de links. */
 export function LinksDraftProvider({
   initialValue,
   initialTab = "configuracoes",

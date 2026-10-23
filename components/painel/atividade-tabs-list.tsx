@@ -2,19 +2,17 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type AtividadeTabsListProps = {
   modo: "criar" | "editar"
-  linksCount: number
   alunosCount?: number
 }
 
 /**
- * Abas compartilhadas: Configurações → Links → Alunos.
+ * Abas compartilhadas: Configurações → Alunos.
  *
  * Na criação, Alunos fica desabilitada porque o código de entrada só existe
  * depois que a atividade é criada.
  */
 export function AtividadeTabsList({
   modo,
-  linksCount,
   alunosCount = 0,
 }: AtividadeTabsListProps) {
   const criando = modo === "criar"
@@ -22,9 +20,6 @@ export function AtividadeTabsList({
   return (
     <TabsList variant="line">
       <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-      <TabsTrigger value="links">
-        Links{criando ? "" : ` (${linksCount})`}
-      </TabsTrigger>
       <TabsTrigger
         value="alunos"
         disabled={criando}

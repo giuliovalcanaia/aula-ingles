@@ -59,7 +59,7 @@ export function NovaAtividadeForm({
         onValueChange={(value) => setAba(String(value))}
         className="gap-4"
       >
-        <AtividadeTabsList modo="criar" linksCount={0} />
+        <AtividadeTabsList modo="criar" />
 
         <TabsContent value="configuracoes" keepMounted className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -70,20 +70,6 @@ export function NovaAtividadeForm({
 
           <Card>
             <CardHeader>
-              <CardTitle>Senha de liberação</CardTitle>
-              <CardDescription>
-                A senha vale para todos os alunos desta atividade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SenhaField label="Senha" />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="links" keepMounted>
-          <Card>
-            <CardHeader>
               <CardTitle>Links</CardTitle>
               <CardDescription>
                 Um link por linha, na ordem em que o aluno deve fazer. Você pode
@@ -92,6 +78,18 @@ export function NovaAtividadeForm({
             </CardHeader>
             <CardContent>
               <LinksTextarea id="links-nova-atividade" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Senha de liberação</CardTitle>
+              <CardDescription>
+                A senha vale para todos os alunos desta atividade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SenhaField label="Senha" />
             </CardContent>
           </Card>
         </TabsContent>
