@@ -19,7 +19,7 @@
 
 - **Local (desenvolvimento)**: stack completo do Supabase via CLI + Docker (`npx supabase start`): API em `54321`, banco em `54322`, Studio em `54323`. O app roda em `localhost:5151` (`npm run dev`). `.env.local` aponta para esse stack.
 - **Produção**: projeto hospedado `fmhzbhiithwmbjfvblhw` (São Paulo, `sa-east-1`, Postgres 17), usado pelo deploy da Vercel a partir do branch `main`. As chaves de produção ficam só na Vercel e no gerenciador de senhas — nunca em arquivo versionado nem em `.env.local`.
-- **Staging (preview)**: segundo projeto hospedado, usado pelos preview deployments da Vercel do branch `dev`. Ainda não foi criado.
+- **Staging (preview)**: projeto hospedado `bzhhteracwpldavzjhga` (São Paulo, `sa-east-1`), usado pelas envs de **Preview** da Vercel (branch `dev`). Tem as mesmas migrations + `seed.sql` aplicados. A CLI conecta pelo pooler `aws-1-sa-east-1.pooler.supabase.com` — o host direto `db.<ref>.supabase.co` só resolve IPv6 e é recusado nesta máquina. A URI completa está em `~/.config/trilha/staging.env` (fora do repo). Previews ficam atrás do Vercel Authentication (SSO); produção é pública.
 
 Branches: `main` = produção (Production Branch na Vercel), `dev` = desenvolvimento (preview), `legacy` = app antigo em JS puro, arquivado. Trabalhe em `dev`; quando estiver estável, `git switch main && git merge --ff-only dev && git push`.
 
@@ -41,6 +41,12 @@ Branches: `main` = produção (Production Branch na Vercel), `dev` = desenvolvim
 6. Regenere `lib/supabase/database.types.ts` pelo MCP/dashboard depois do push.
 
 Nunca rode `db reset` contra o projeto remoto. Migrations aplicadas via MCP recebem o timestamp atual como versão — renomeie o arquivo local para casar, ou prefira o fluxo acima.
+
+Para aplicar no staging (sem `link`, direto pela URI em `~/.config/trilha/staging.env`):
+
+```bash
+npx supabase db push --db-url "<SUPABASE_STAGING_DB_URL>" [--include-seed]
+```
 
 ## Stack quirks
 
